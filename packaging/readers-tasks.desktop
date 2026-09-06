@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Reader's Tasks
+Comment=Black-and-white, text-only CalDAV task list (Tasks.org Cloud, Nextcloud…)
+Exec=readers-tasks
+Icon=readers-tasks
+Terminal=false
+Categories=Office;ProjectManagement;Qt;
+Keywords=tasks;todo;caldav;

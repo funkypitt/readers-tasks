@@ -1,0 +1,24 @@
+# Maintainer: funkypitt <pierregallaz@gmail.com>
+# Arch / Manjaro: cd packaging && makepkg -si
+pkgname=readers-tasks
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Black-and-white, text-only CalDAV task list (Tasks.org Cloud, Nextcloud…)"
+arch=('any')
+url="https://github.com/funkypitt/readers-tasks"
+license=('MIT')
+depends=('python' 'python-pyqt5' 'python-requests')
+source=("$pkgname-$pkgver.tar.gz::https://github.com/funkypitt/readers-tasks/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+package() {
+  cd "$srcdir/$pkgname-$pkgver"
+  install -Dm755 readers_tasks.py "$pkgdir/usr/lib/readers-tasks/readers_tasks.py"
+  install -Dm755 /dev/stdin "$pkgdir/usr/bin/readers-tasks" <<'SH'
+#!/bin/sh
+exec python3 /usr/lib/readers-tasks/readers_tasks.py "$@"
+SH
+  install -Dm644 packaging/readers-tasks.desktop "$pkgdir/usr/share/applications/readers-tasks.desktop"
+  install -Dm644 packaging/readers-tasks.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/readers-tasks.svg"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
