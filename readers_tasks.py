@@ -17,7 +17,7 @@ import requests
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 APP = "readers-tasks"
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 CONFIG_DIR = os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), APP)
 CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
 SYNC_MINUTES = 5
@@ -413,9 +413,18 @@ class Main(QtWidgets.QMainWindow):
         self.entry.setFrame(False)
         self.entry.returnPressed.connect(self.add_task)
         right.addWidget(self.entry)
+        bottom = QtWidgets.QHBoxLayout()
+        bottom.setContentsMargins(0, 0, 0, 0)
         self.status = QtWidgets.QLabel("")
         self.status.setObjectName("dim")
-        right.addWidget(self.status)
+        bottom.addWidget(self.status, 1)
+        self.gear = QtWidgets.QLabel("⚙")
+        self.gear.setObjectName("dim")
+        self.gear.setToolTip("server settings (Ctrl+,)")
+        self.gear.setCursor(QtCore.Qt.PointingHandCursor)
+        self.gear.mousePressEvent = lambda e: self.setup()
+        bottom.addWidget(self.gear, 0)
+        right.addLayout(bottom)
 
         # Shortcuts
         QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+T"), self, self.toggle_theme)

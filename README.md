@@ -12,7 +12,7 @@ to tick, a line at the bottom to add. White on black or black on white. Nothing 
 Debian, Ubuntu, Pop!_OS:
 
 ```
-sudo apt install ./readers-tasks_1.0.0_all.deb
+sudo apt install ./readers-tasks_1.0.1_all.deb
 ```
 
 Arch, Manjaro:
@@ -41,7 +41,7 @@ password is stored in `~/.config/readers-tasks/config.json`, readable by you onl
 | Ctrl+= / Ctrl+- | larger / smaller text |
 | F5 or Ctrl+R | sync now (also every 5 minutes) |
 | Ctrl+N | jump to the new-task line |
-| Ctrl+, | server settings |
+| Ctrl+, or the ⚙ in the status line | server settings |
 | Ctrl+Q | quit |
 
 Completed tasks are hidden; they stay on the server. Tasks are ordered by due date, then by
