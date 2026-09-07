@@ -47,6 +47,21 @@ password is stored in `~/.config/readers-tasks/config.json`, readable by you onl
 Completed tasks are hidden; they stay on the server. Tasks are ordered by due date, then by
 creation, like the launcher tile.
 
+## Moving lists between servers
+
+`copy_tasks.py` copies the tasks of one list into another, on the same server or not —
+for instance from Tasks.org Cloud to an Infomaniak or Nextcloud calendar:
+
+```
+python3 copy_tasks.py \
+    --from https://caldav.tasks.org/ USER APP_PASSWORD "Inbox" \
+    --to   https://sync.infomaniak.com AB12345 APP_PASSWORD "À faire" \
+    --include-completed
+```
+
+Tasks keep their UID, so a second run skips what is already there; nothing is deleted on
+the source. Add `--dry-run` to see the list first.
+
 ## Build the .deb
 
 ```
