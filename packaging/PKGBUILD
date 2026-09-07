@@ -1,7 +1,7 @@
 # Maintainer: funkypitt <pierregallaz@gmail.com>
 # Arch / Manjaro: cd packaging && makepkg -si
 pkgname=readers-tasks
-pkgver=1.0.1
+pkgver=1.1.0
 pkgrel=1
 pkgdesc="Black-and-white, text-only CalDAV task list (Tasks.org Cloud, Nextcloud…)"
 arch=('any')

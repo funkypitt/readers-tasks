@@ -12,7 +12,7 @@ to tick, a line at the bottom to add. White on black or black on white. Nothing 
 Debian, Ubuntu, Pop!_OS:
 
 ```
-sudo apt install ./readers-tasks_1.0.1_all.deb
+sudo apt install ./readers-tasks_1.1.0_all.deb
 ```
 
 Arch, Manjaro:
@@ -41,10 +41,14 @@ password is stored in `~/.config/readers-tasks/config.json`, readable by you onl
 | Ctrl+= / Ctrl+- | larger / smaller text |
 | F5 or Ctrl+R | sync now (also every 5 minutes) |
 | Ctrl+N | jump to the new-task line |
+| Ctrl+D or the "show n done" line | show / hide completed tasks; click ☑ (or right click → reopen) to untick one |
+| right click on a list | move up · move down · hide this list · show a hidden list |
 | Ctrl+, or the ⚙ in the status line | server settings |
 | Ctrl+Q | quit |
 
-Completed tasks are hidden; they stay on the server. Tasks are ordered by due date, then by
+Completed tasks are hidden by default; the "show n done" line under the list brings them
+back, dimmed, so a task ticked by mistake can be reopened. Lists you hide, and the order
+you give them, are remembered in the config file. Tasks are ordered by due date, then by
 creation, like the launcher tile.
 
 ## Moving lists between servers

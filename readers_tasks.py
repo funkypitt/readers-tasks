@@ -17,7 +17,7 @@ import requests
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 APP = "readers-tasks"
-VERSION = "1.0.1"
+VERSION = "1.1.0"
 CONFIG_DIR = os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), APP)
 CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
 SYNC_MINUTES = 5
@@ -115,6 +115,24 @@ class Task:
                 in_todo = False
             out.append(l)
         return "\r\n".join(_fold(l) for l in out) + "\r\n"
+
+
+def _reopened_ics(task):
+    """The same VTODO with the completion properties removed."""
+    lines = _unfold(task.ics)
+    out, in_todo = [], False
+    for l in lines:
+        u = l.upper()
+        if u.startswith("BEGIN:VTODO"):
+            in_todo = True
+        if in_todo and u.split(":", 1)[0].split(";", 1)[0] in ("STATUS", "COMPLETED", "PERCENT-COMPLETE", "LAST-MODIFIED", "DTSTAMP"):
+            continue
+        if u.startswith("END:VTODO"):
+            now = _utcnow()
+            out += [f"DTSTAMP:{now}", f"LAST-MODIFIED:{now}", "STATUS:NEEDS-ACTION"]
+            in_todo = False
+        out.append(l)
+    return "\r\n".join(_fold(l) for l in out) + "\r\n"
 
 
 def _parse_date(v):
@@ -240,6 +258,12 @@ class CalDAV:
             headers["If-Match"] = task.etag
         self._req("PUT", task.href, task.completed_ics(), headers=headers)
 
+    def reopen(self, task):
+        headers = {"Content-Type": "text/calendar; charset=utf-8"}
+        if task.etag:
+            headers["If-Match"] = task.etag
+        self._req("PUT", task.href, _reopened_ics(task), headers=headers)
+
     def delete(self, task):
         self._req("DELETE", task.href)
 
@@ -287,25 +311,31 @@ class Worker(QtCore.QObject):
 
 class TaskRow(QtWidgets.QWidget):
     completed = QtCore.pyqtSignal(object)
+    reopened = QtCore.pyqtSignal(object)
     deleted = QtCore.pyqtSignal(object)
 
-    def __init__(self, task, big, small, parent=None):
+    def __init__(self, task, big, small, done=False, parent=None):
         super().__init__(parent)
         self.task = task
+        self.done = done
         lay = QtWidgets.QHBoxLayout(self)
         lay.setContentsMargins(0, 8, 0, 8)
         lay.setSpacing(18)
-        self.box = QtWidgets.QLabel("☐")
+        self.box = QtWidgets.QLabel("☑" if done else "☐")
         self.box.setFont(big)
         self.box.setCursor(QtCore.Qt.PointingHandCursor)
-        self.box.setToolTip("complete")
-        self.box.mousePressEvent = lambda e: self.completed.emit(self.task)
+        self.box.setToolTip("reopen" if done else "complete")
+        if done:
+            self.box.setObjectName("dim")
+        self.box.mousePressEvent = lambda e: (self.reopened if self.done else self.completed).emit(self.task)
         lay.addWidget(self.box, 0)
         col = QtWidgets.QVBoxLayout()
         col.setSpacing(0)
         title = QtWidgets.QLabel(task.summary or "…")
         title.setFont(big)
         title.setWordWrap(True)
+        if done:
+            title.setObjectName("dim")
         col.addWidget(title)
         due = task.due_label()
         if due:
@@ -319,7 +349,10 @@ class TaskRow(QtWidgets.QWidget):
 
     def _menu(self, pos):
         m = QtWidgets.QMenu(self)
-        m.addAction("complete", lambda: self.completed.emit(self.task))
+        if self.done:
+            m.addAction("reopen", lambda: self.reopened.emit(self.task))
+        else:
+            m.addAction("complete", lambda: self.completed.emit(self.task))
         m.addAction("delete", lambda: self.deleted.emit(self.task))
         m.exec_(self.mapToGlobal(pos))
 
@@ -368,8 +401,10 @@ class Main(QtWidgets.QMainWindow):
         super().__init__()
         self.cfg = load_config()
         self.client = None
-        self.lists = []
-        self.tasks = []
+        self.lists = []          # every list the server has: [(name, url)]
+        self.tasks = []          # open tasks of the current list
+        self.done_tasks = []     # completed tasks of the current list
+        self.show_done = False
         self.threads = []
         self.setWindowTitle("reader's tasks")
         self.resize(760, 900)
@@ -389,6 +424,8 @@ class Main(QtWidgets.QMainWindow):
         self.lists_widget.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.lists_widget.setFixedWidth(220)
         self.lists_widget.currentRowChanged.connect(self.select_list)
+        self.lists_widget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.lists_widget.customContextMenuRequested.connect(self.lists_menu)
         outer.addWidget(self.lists_widget)
 
         # Tasks column
@@ -407,6 +444,12 @@ class Main(QtWidgets.QMainWindow):
         self.rows.addStretch(1)
         self.scroll.setWidget(self.rows_host)
         right.addWidget(self.scroll, 1)
+        # "n done" line: shows / hides the completed tasks (reopen a task ticked by mistake).
+        self.done_toggle = QtWidgets.QLabel("")
+        self.done_toggle.setObjectName("dim")
+        self.done_toggle.setCursor(QtCore.Qt.PointingHandCursor)
+        self.done_toggle.mousePressEvent = lambda e: self.toggle_done()
+        right.addWidget(self.done_toggle)
 
         self.entry = QtWidgets.QLineEdit()
         self.entry.setPlaceholderText("+ new task")
@@ -435,6 +478,7 @@ class Main(QtWidgets.QMainWindow):
         QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl++"), self, lambda: self.zoom(1))
         QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+-"), self, lambda: self.zoom(-1))
         QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+,"), self, self.setup)
+        QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+D"), self, self.toggle_done)
         QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+Q"), self, self.close)
 
         self.timer = QtCore.QTimer(self)
@@ -530,19 +574,69 @@ class Main(QtWidgets.QMainWindow):
 
     def got_lists(self, lists):
         self.lists = lists
+        self.refresh_lists(keep=self.cfg.get("list_url"))
+
+    def visible_lists(self):
+        hidden = set(self.cfg.get("hidden_lists", []))
+        order = self.cfg.get("list_order", [])
+        shown = [(n, u) for n, u in self.lists if u not in hidden]
+        return sorted(shown, key=lambda x: (order.index(x[1]) if x[1] in order else len(order), x[0].lower()))
+
+    def refresh_lists(self, keep=None):
+        shown = self.visible_lists()
         self.lists_widget.blockSignals(True)
         self.lists_widget.clear()
-        for name, _ in lists:
+        for name, _ in shown:
             self.lists_widget.addItem(name)
-        wanted = self.cfg.get("list_url")
-        row = next((i for i, (_, u) in enumerate(lists) if u == wanted), 0)
+        row = next((i for i, (_, u) in enumerate(shown) if u == keep), 0)
         self.lists_widget.setCurrentRow(row)
         self.lists_widget.blockSignals(False)
         self.select_list(row)
 
     def current_list(self):
         row = self.lists_widget.currentRow()
-        return self.lists[row][1] if 0 <= row < len(self.lists) else None
+        shown = self.visible_lists()
+        return shown[row][1] if 0 <= row < len(shown) else None
+
+    def lists_menu(self, pos):
+        shown = self.visible_lists()
+        item = self.lists_widget.itemAt(pos)
+        row = self.lists_widget.row(item) if item else -1
+        m = QtWidgets.QMenu(self)
+        if 0 <= row < len(shown):
+            url = shown[row][1]
+            if row > 0:
+                m.addAction("move up", lambda: self.move_list(url, -1))
+            if row < len(shown) - 1:
+                m.addAction("move down", lambda: self.move_list(url, 1))
+            m.addAction("hide this list", lambda: self.hide_list(url))
+        hidden = [(n, u) for n, u in self.lists if u in set(self.cfg.get("hidden_lists", []))]
+        if hidden:
+            sub = m.addMenu("show a hidden list")
+            for n, u in hidden:
+                sub.addAction(n, lambda u=u: self.unhide_list(u))
+        m.exec_(self.lists_widget.mapToGlobal(pos))
+
+    def move_list(self, url, delta):
+        order = [u for _, u in self.visible_lists()]
+        i = order.index(url)
+        order.insert(i + delta, order.pop(i))
+        self.cfg["list_order"] = order
+        save_config(self.cfg)
+        self.refresh_lists(keep=self.current_list())
+
+    def hide_list(self, url):
+        hidden = [u for u in self.cfg.get("hidden_lists", []) if u != url] + [url]
+        if len(hidden) >= len(self.lists):
+            return  # keep at least one list on screen
+        self.cfg["hidden_lists"] = hidden
+        save_config(self.cfg)
+        self.refresh_lists(keep=self.current_list() if self.current_list() != url else None)
+
+    def unhide_list(self, url):
+        self.cfg["hidden_lists"] = [u for u in self.cfg.get("hidden_lists", []) if u != url]
+        save_config(self.cfg)
+        self.refresh_lists(keep=url)
 
     def select_list(self, row):
         url = self.current_list()
@@ -563,24 +657,40 @@ class Main(QtWidgets.QMainWindow):
         open_tasks = [t for t in tasks if not t.completed and not t.cancelled]
         open_tasks.sort(key=lambda t: (t.due is None, t.due or date.max, t.created))
         self.tasks = open_tasks
+        done = [t for t in tasks if t.completed]
+        done.sort(key=lambda t: _prop(t.todo_lines, "COMPLETED") or "", reverse=True)
+        self.done_tasks = done
         self.render_tasks()
         self.status.setText(f"{len(open_tasks)} open · synced {datetime.now().strftime('%H:%M')}")
+
+    def toggle_done(self):
+        self.show_done = not self.show_done
+        self.render_tasks()
 
     def render_tasks(self):
         while self.rows.count() > 1:
             item = self.rows.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
-        for i, t in enumerate(self.tasks):
+        i = 0
+        for t in self.tasks:
             row = TaskRow(t, self.big, self.small)
             row.completed.connect(self.complete_task)
             row.deleted.connect(self.delete_task)
-            self.rows.insertWidget(i, row)
+            self.rows.insertWidget(i, row); i += 1
         if not self.tasks and self.client:
             empty = QtWidgets.QLabel("no open task")
             empty.setObjectName("dim")
             empty.setFont(self.big)
-            self.rows.insertWidget(0, empty)
+            self.rows.insertWidget(i, empty); i += 1
+        if self.show_done:
+            for t in self.done_tasks:
+                row = TaskRow(t, self.big, self.small, done=True)
+                row.reopened.connect(self.reopen_task)
+                row.deleted.connect(self.delete_task)
+                self.rows.insertWidget(i, row); i += 1
+        n = len(self.done_tasks)
+        self.done_toggle.setText("" if not n else (f"hide {n} done" if self.show_done else f"show {n} done"))
 
     def add_task(self):
         text = self.entry.text().strip()
@@ -596,8 +706,14 @@ class Main(QtWidgets.QMainWindow):
         self.render_tasks()
         self.run(lambda: self.client.complete(task), lambda _: self.sync())
 
+    def reopen_task(self, task):
+        self.done_tasks = [t for t in self.done_tasks if t is not task]
+        self.render_tasks()
+        self.run(lambda: self.client.reopen(task), lambda _: self.sync())
+
     def delete_task(self, task):
         self.tasks = [t for t in self.tasks if t is not task]
+        self.done_tasks = [t for t in self.done_tasks if t is not task]
         self.render_tasks()
         self.run(lambda: self.client.delete(task), lambda _: self.sync())
 
