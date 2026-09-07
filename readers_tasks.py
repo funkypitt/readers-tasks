@@ -17,7 +17,7 @@ import requests
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 APP = "readers-tasks"
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 CONFIG_DIR = os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), APP)
 CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
 SYNC_MINUTES = 5
@@ -79,6 +79,11 @@ class Task:
         self.cancelled = status == "CANCELLED"
         self.due = _parse_date(_prop(self.todo_lines, "DUE"))
         self.created = _prop(self.todo_lines, "CREATED") or _prop(self.todo_lines, "DTSTAMP") or ""
+        # Manual order: the de facto standard property (Apple Reminders, Nextcloud Tasks, Tasks.org).
+        try:
+            self.sort_order = int(_prop(self.todo_lines, "X-APPLE-SORT-ORDER"))
+        except (TypeError, ValueError):
+            self.sort_order = None
         self.parent = None
         for line in self.todo_lines:
             if line.upper().startswith("RELATED-TO") and ("RELTYPE=CHILD" not in line.upper()):
@@ -115,6 +120,53 @@ class Task:
                 in_todo = False
             out.append(l)
         return "\r\n".join(_fold(l) for l in out) + "\r\n"
+
+
+def _with_sort_order(ics, value):
+    """The same VTODO with X-APPLE-SORT-ORDER set to value."""
+    lines = _unfold(ics)
+    out, in_todo = [], False
+    for l in lines:
+        u = l.upper()
+        if u.startswith("BEGIN:VTODO"):
+            in_todo = True
+        if in_todo and u.split(":", 1)[0].split(";", 1)[0] in ("X-APPLE-SORT-ORDER", "LAST-MODIFIED", "DTSTAMP"):
+            continue
+        if u.startswith("END:VTODO"):
+            now = _utcnow()
+            out += [f"DTSTAMP:{now}", f"LAST-MODIFIED:{now}", f"X-APPLE-SORT-ORDER:{value}"]
+            in_todo = False
+        out.append(l)
+    return "\r\n".join(_fold(l) for l in out) + "\r\n"
+
+
+def plan_sort_orders(ordered):
+    """Given tasks in their wanted order, return {task: new_sort_order} for those that must change.
+    Keeps existing values when they already increase along the list; otherwise renumbers."""
+    values = [t.sort_order for t in ordered]
+    if all(v is not None for v in values) and all(a < b for a, b in zip(values, values[1:])):
+        return {}
+    changes = {}
+    # Try to fit only the out-of-place ones between their neighbours; fall back to renumbering.
+    prev = None
+    ok = True
+    for i, t in enumerate(ordered):
+        nxt = next((x.sort_order for x in ordered[i + 1:] if x.sort_order is not None and x not in changes), None)
+        v = t.sort_order
+        if v is not None and (prev is None or v > prev) and (nxt is None or v < nxt):
+            prev = v
+            continue
+        lo = prev if prev is not None else 0
+        hi = nxt if nxt is not None else lo + 2000
+        if hi - lo < 2:
+            ok = False
+            break
+        v = (lo + hi) // 2
+        changes[t] = v
+        prev = v
+    if ok:
+        return changes
+    return {t: (i + 1) * 1000 for i, t in enumerate(ordered)}
 
 
 def _reopened_ics(task):
@@ -258,6 +310,12 @@ class CalDAV:
             headers["If-Match"] = task.etag
         self._req("PUT", task.href, task.completed_ics(), headers=headers)
 
+    def set_sort_order(self, task, value):
+        headers = {"Content-Type": "text/calendar; charset=utf-8"}
+        if task.etag:
+            headers["If-Match"] = task.etag
+        self._req("PUT", task.href, _with_sort_order(task.ics, value), headers=headers)
+
     def reopen(self, task):
         headers = {"Content-Type": "text/calendar; charset=utf-8"}
         if task.etag:
@@ -313,6 +371,8 @@ class TaskRow(QtWidgets.QWidget):
     completed = QtCore.pyqtSignal(object)
     reopened = QtCore.pyqtSignal(object)
     deleted = QtCore.pyqtSignal(object)
+    drag_moved = QtCore.pyqtSignal(object, int)   # (task, global y)
+    drag_ended = QtCore.pyqtSignal(object)
 
     def __init__(self, task, big, small, done=False, parent=None):
         super().__init__(parent)
@@ -346,6 +406,32 @@ class TaskRow(QtWidgets.QWidget):
         lay.addLayout(col, 1)
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self._menu)
+        self._press = None
+        self._dragging = False
+        if not done:
+            self.setCursor(QtCore.Qt.OpenHandCursor)
+
+    # Drag the row (not its box) with the left button to reorder the open tasks.
+    def mousePressEvent(self, e):
+        if e.button() == QtCore.Qt.LeftButton and not self.done:
+            self._press = e.globalPos()
+        super().mousePressEvent(e)
+
+    def mouseMoveEvent(self, e):
+        if self._press is not None and (e.globalPos() - self._press).manhattanLength() > 8:
+            self._dragging = True
+            self.setCursor(QtCore.Qt.ClosedHandCursor)
+            self.drag_moved.emit(self.task, e.globalPos().y())
+        super().mouseMoveEvent(e)
+
+    def mouseReleaseEvent(self, e):
+        if self._dragging:
+            self.drag_ended.emit(self.task)
+        self._press = None
+        self._dragging = False
+        if not self.done:
+            self.setCursor(QtCore.Qt.OpenHandCursor)
+        super().mouseReleaseEvent(e)
 
     def _menu(self, pos):
         m = QtWidgets.QMenu(self)
@@ -655,7 +741,8 @@ class Main(QtWidgets.QMainWindow):
 
     def got_tasks(self, tasks):
         open_tasks = [t for t in tasks if not t.completed and not t.cancelled]
-        open_tasks.sort(key=lambda t: (t.due is None, t.due or date.max, t.created))
+        # Manual order first (X-APPLE-SORT-ORDER), then the rest by due date and creation.
+        open_tasks.sort(key=lambda t: (t.sort_order is None, t.sort_order or 0, t.due is None, t.due or date.max, t.created))
         self.tasks = open_tasks
         done = [t for t in tasks if t.completed]
         done.sort(key=lambda t: _prop(t.todo_lines, "COMPLETED") or "", reverse=True)
@@ -673,11 +760,15 @@ class Main(QtWidgets.QMainWindow):
             if item.widget():
                 item.widget().deleteLater()
         i = 0
+        self.open_rows = []
         for t in self.tasks:
             row = TaskRow(t, self.big, self.small)
             row.completed.connect(self.complete_task)
             row.deleted.connect(self.delete_task)
+            row.drag_moved.connect(self.drag_row)
+            row.drag_ended.connect(self.drop_row)
             self.rows.insertWidget(i, row); i += 1
+            self.open_rows.append(row)
         if not self.tasks and self.client:
             empty = QtWidgets.QLabel("no open task")
             empty.setObjectName("dim")
@@ -691,6 +782,43 @@ class Main(QtWidgets.QMainWindow):
                 self.rows.insertWidget(i, row); i += 1
         n = len(self.done_tasks)
         self.done_toggle.setText("" if not n else (f"hide {n} done" if self.show_done else f"show {n} done"))
+
+    # ---- manual order -------------------------------------------------------------------
+
+    def drag_row(self, task, global_y):
+        rows = self.open_rows
+        cur = next((i for i, r in enumerate(rows) if r.task is task), None)
+        if cur is None:
+            return
+        y = self.rows_host.mapFromGlobal(QtCore.QPoint(0, global_y)).y()
+        target = cur
+        for i, r in enumerate(rows):
+            if r.geometry().top() <= y <= r.geometry().bottom():
+                target = i
+                break
+        else:
+            if rows and y < rows[0].geometry().top():
+                target = 0
+            elif rows and y > rows[-1].geometry().bottom():
+                target = len(rows) - 1
+        if target != cur:
+            row = rows.pop(cur)
+            rows.insert(target, row)
+            self.rows.removeWidget(row)
+            self.rows.insertWidget(target, row)
+            t = self.tasks.pop(cur)
+            self.tasks.insert(target, t)
+
+    def drop_row(self, task):
+        changes = plan_sort_orders(list(self.tasks))
+        if not changes:
+            return
+        self.status.setText("saving order…")
+
+        def apply():
+            for t, v in changes.items():
+                self.client.set_sort_order(t, v)
+        self.run(apply, lambda _: self.sync())
 
     def add_task(self):
         text = self.entry.text().strip()

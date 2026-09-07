@@ -12,7 +12,7 @@ to tick, a line at the bottom to add. White on black or black on white. Nothing 
 Debian, Ubuntu, Pop!_OS:
 
 ```
-sudo apt install ./readers-tasks_1.1.0_all.deb
+sudo apt install ./readers-tasks_1.2.0_all.deb
 ```
 
 Arch, Manjaro:
@@ -36,6 +36,7 @@ password is stored in `~/.config/readers-tasks/config.json`, readable by you onl
 |---|---|
 | Enter in the bottom line | add the task to the current list |
 | click ☐ | complete |
+| drag a task up or down | put the open tasks in your own order (saved on the server as X-APPLE-SORT-ORDER, so the phone shows the same order) |
 | right click on a task | complete · delete |
 | Ctrl+T | flip white on black / black on white |
 | Ctrl+= / Ctrl+- | larger / smaller text |
@@ -46,7 +47,8 @@ password is stored in `~/.config/readers-tasks/config.json`, readable by you onl
 | Ctrl+, or the ⚙ in the status line | server settings |
 | Ctrl+Q | quit |
 
-Completed tasks are hidden by default; the "show n done" line under the list brings them
+Open tasks follow the order you give them by dragging; tasks never dragged come after,
+by due date then creation. Completed tasks are hidden by default; the "show n done" line under the list brings them
 back, dimmed, so a task ticked by mistake can be reopened. Lists you hide, and the order
 you give them, are remembered in the config file. Tasks are ordered by due date, then by
 creation, like the launcher tile.
