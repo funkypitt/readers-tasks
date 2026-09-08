@@ -12,7 +12,7 @@ to tick, a line at the bottom to add. White on black or black on white. Nothing 
 Debian, Ubuntu, Pop!_OS:
 
 ```
-sudo apt install ./readers-tasks_1.2.0_all.deb
+sudo apt install ./readers-tasks_1.3.0_all.deb
 ```
 
 Arch, Manjaro:
@@ -29,6 +29,11 @@ Anywhere else: `python3 readers_tasks.py` with PyQt5 and requests installed.
 In the Android app: ⚙ › App settings › Tasks.org › *Generate new password*. Copy the URL,
 username and app password shown there into the first-run dialog (Ctrl+, later). The
 password is stored in `~/.config/readers-tasks/config.json`, readable by you only.
+
+## Languages
+
+English, French, German, Spanish, Portuguese and Russian, following the system language
+(`LANG`).
 
 ## Keys
 

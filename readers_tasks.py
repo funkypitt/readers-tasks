@@ -17,7 +17,7 @@ import requests
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 APP = "readers-tasks"
-VERSION = "1.2.0"
+VERSION = "1.3.0"
 CONFIG_DIR = os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), APP)
 CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
 SYNC_MINUTES = 5
@@ -65,6 +65,187 @@ def _utcnow():
     return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 
 
+# ------------------------------------------------------------------------------------------
+# Six languages, the English text as the key (the launcher's languages: en, fr, de, es, pt, ru)
+# ------------------------------------------------------------------------------------------
+
+_TR = {
+ "fr": {
+  "reopen": "rouvrir",
+  "complete": "terminer",
+  "delete": "supprimer",
+  "server": "serveur",
+  "username": "identifiant",
+  "app password": "mot de passe d'application",
+  "cancel": "annuler",
+  "connect": "se connecter",
+  "+ new task": "+ nouvelle tâche",
+  "server settings (Ctrl+,)": "réglages du serveur (Ctrl+,)",
+  "not connected — Ctrl+, to set up": "non connecté — Ctrl+, pour configurer",
+  "connecting…": "connexion…",
+  "move up": "monter",
+  "move down": "descendre",
+  "hide this list": "masquer cette liste",
+  "show a hidden list": "afficher une liste masquée",
+  "syncing…": "synchronisation…",
+  "%1 open · synced %2": "%1 en cours · synchronisé %2",
+  "no open task": "aucune tâche en cours",
+  "hide %1 done": "masquer %1 terminées",
+  "show %1 done": "afficher %1 terminées",
+  "saving order…": "enregistrement de l'ordre…",
+  "adding…": "ajout…",
+  "today": "aujourd'hui",
+  "tomorrow": "demain",
+  "%1 d late": "%1 j de retard",
+  "wrong username or app password": "identifiant ou mot de passe d'application incorrect",
+  "no task list found at this address": "aucune liste de tâches à cette adresse",
+  "CalDAV task lists. For Tasks.org Cloud: in the Android app,\\n⚙ › App settings › Tasks.org › Generate new password, and copy\\nthe URL, username and app password shown there.": "Listes de tâches CalDAV. Tasks.org Cloud : dans l'app Android,\\n⚙ › Paramètres › Tasks.org › Générer un nouveau mot de passe, puis copier\\nl'URL, l'identifiant et le mot de passe d'application affichés."
+ },
+ "de": {
+  "reopen": "wieder öffnen",
+  "complete": "erledigt",
+  "delete": "löschen",
+  "server": "Server",
+  "username": "Benutzername",
+  "app password": "App-Passwort",
+  "cancel": "abbrechen",
+  "connect": "verbinden",
+  "+ new task": "+ neue Aufgabe",
+  "server settings (Ctrl+,)": "Servereinstellungen (Strg+,)",
+  "not connected — Ctrl+, to set up": "nicht verbunden — Strg+, zum Einrichten",
+  "connecting…": "verbinde…",
+  "move up": "nach oben",
+  "move down": "nach unten",
+  "hide this list": "diese Liste verbergen",
+  "show a hidden list": "verborgene Liste zeigen",
+  "syncing…": "synchronisiere…",
+  "%1 open · synced %2": "%1 offen · synchronisiert %2",
+  "no open task": "keine offene Aufgabe",
+  "hide %1 done": "%1 erledigte verbergen",
+  "show %1 done": "%1 erledigte zeigen",
+  "saving order…": "Reihenfolge wird gespeichert…",
+  "adding…": "füge hinzu…",
+  "today": "heute",
+  "tomorrow": "morgen",
+  "%1 d late": "%1 T. überfällig",
+  "wrong username or app password": "falscher Benutzername oder falsches App-Passwort",
+  "no task list found at this address": "keine Aufgabenliste unter dieser Adresse",
+  "CalDAV task lists. For Tasks.org Cloud: in the Android app,\\n⚙ › App settings › Tasks.org › Generate new password, and copy\\nthe URL, username and app password shown there.": "CalDAV-Aufgabenlisten. Tasks.org Cloud: in der Android-App\\n⚙ › App-Einstellungen › Tasks.org › Neues Passwort erzeugen, dann URL,\\nBenutzername und App-Passwort von dort kopieren."
+ },
+ "es": {
+  "reopen": "reabrir",
+  "complete": "completar",
+  "delete": "eliminar",
+  "server": "servidor",
+  "username": "usuario",
+  "app password": "contraseña de aplicación",
+  "cancel": "cancelar",
+  "connect": "conectar",
+  "+ new task": "+ nueva tarea",
+  "server settings (Ctrl+,)": "ajustes del servidor (Ctrl+,)",
+  "not connected — Ctrl+, to set up": "sin conexión — Ctrl+, para configurar",
+  "connecting…": "conectando…",
+  "move up": "subir",
+  "move down": "bajar",
+  "hide this list": "ocultar esta lista",
+  "show a hidden list": "mostrar una lista oculta",
+  "syncing…": "sincronizando…",
+  "%1 open · synced %2": "%1 pendientes · sincronizado %2",
+  "no open task": "ninguna tarea pendiente",
+  "hide %1 done": "ocultar %1 hechas",
+  "show %1 done": "mostrar %1 hechas",
+  "saving order…": "guardando el orden…",
+  "adding…": "añadiendo…",
+  "today": "hoy",
+  "tomorrow": "mañana",
+  "%1 d late": "%1 d de retraso",
+  "wrong username or app password": "usuario o contraseña de aplicación incorrectos",
+  "no task list found at this address": "ninguna lista de tareas en esta dirección",
+  "CalDAV task lists. For Tasks.org Cloud: in the Android app,\\n⚙ › App settings › Tasks.org › Generate new password, and copy\\nthe URL, username and app password shown there.": "Listas de tareas CalDAV. Tasks.org Cloud: en la app Android,\\n⚙ › Ajustes › Tasks.org › Generar nueva contraseña, y copia\\nla URL, el usuario y la contraseña de aplicación mostrados."
+ },
+ "pt": {
+  "reopen": "reabrir",
+  "complete": "concluir",
+  "delete": "apagar",
+  "server": "servidor",
+  "username": "utilizador",
+  "app password": "palavra-passe de aplicação",
+  "cancel": "cancelar",
+  "connect": "ligar",
+  "+ new task": "+ nova tarefa",
+  "server settings (Ctrl+,)": "definições do servidor (Ctrl+,)",
+  "not connected — Ctrl+, to set up": "sem ligação — Ctrl+, para configurar",
+  "connecting…": "a ligar…",
+  "move up": "subir",
+  "move down": "descer",
+  "hide this list": "ocultar esta lista",
+  "show a hidden list": "mostrar uma lista oculta",
+  "syncing…": "a sincronizar…",
+  "%1 open · synced %2": "%1 em aberto · sincronizado %2",
+  "no open task": "nenhuma tarefa em aberto",
+  "hide %1 done": "ocultar %1 feitas",
+  "show %1 done": "mostrar %1 feitas",
+  "saving order…": "a guardar a ordem…",
+  "adding…": "a adicionar…",
+  "today": "hoje",
+  "tomorrow": "amanhã",
+  "%1 d late": "%1 d de atraso",
+  "wrong username or app password": "utilizador ou palavra-passe de aplicação errados",
+  "no task list found at this address": "nenhuma lista de tarefas neste endereço",
+  "CalDAV task lists. For Tasks.org Cloud: in the Android app,\\n⚙ › App settings › Tasks.org › Generate new password, and copy\\nthe URL, username and app password shown there.": "Listas de tarefas CalDAV. Tasks.org Cloud: na app Android,\\n⚙ › Definições › Tasks.org › Gerar nova palavra-passe, e copie\\no URL, o utilizador e a palavra-passe de aplicação mostrados."
+ },
+ "ru": {
+  "reopen": "открыть заново",
+  "complete": "выполнить",
+  "delete": "удалить",
+  "server": "сервер",
+  "username": "имя пользователя",
+  "app password": "пароль приложения",
+  "cancel": "отмена",
+  "connect": "подключиться",
+  "+ new task": "+ новая задача",
+  "server settings (Ctrl+,)": "настройки сервера (Ctrl+,)",
+  "not connected — Ctrl+, to set up": "нет подключения — Ctrl+, для настройки",
+  "connecting…": "подключение…",
+  "move up": "выше",
+  "move down": "ниже",
+  "hide this list": "скрыть этот список",
+  "show a hidden list": "показать скрытый список",
+  "syncing…": "синхронизация…",
+  "%1 open · synced %2": "открытых: %1 · синхронизировано %2",
+  "no open task": "нет открытых задач",
+  "hide %1 done": "скрыть %1 выполненных",
+  "show %1 done": "показать %1 выполненных",
+  "saving order…": "сохранение порядка…",
+  "adding…": "добавление…",
+  "today": "сегодня",
+  "tomorrow": "завтра",
+  "%1 d late": "просрочено %1 д",
+  "wrong username or app password": "неверное имя пользователя или пароль приложения",
+  "no task list found at this address": "по этому адресу нет списков задач",
+  "CalDAV task lists. For Tasks.org Cloud: in the Android app,\\n⚙ › App settings › Tasks.org › Generate new password, and copy\\nthe URL, username and app password shown there.": "Списки задач CalDAV. Tasks.org Cloud: в приложении Android\\n⚙ › Настройки › Tasks.org › Создать новый пароль, затем скопировать\\nURL, имя пользователя и пароль приложения оттуда."
+ }
+}
+
+
+def _lang():
+    for var in ("LC_ALL", "LC_MESSAGES", "LANG"):
+        v = os.environ.get(var)
+        if v:
+            return v[:2].lower()
+    return "en"
+
+
+_LANG = _lang()
+
+
+def _(key, *args):
+    s = _TR.get(_LANG, {}).get(key, key)
+    for i, a in enumerate(args):
+        s = s.replace("%" + str(i + 1), str(a))
+    return s
+
+
 class Task:
     def __init__(self, href, etag, ics):
         self.href, self.etag, self.ics = href, etag, ics
@@ -95,11 +276,11 @@ class Task:
         today = date.today()
         delta = (self.due - today).days
         if delta == 0:
-            return "today"
+            return _("today")
         if delta == 1:
-            return "tomorrow"
+            return _("tomorrow")
         if delta < 0:
-            return f"{-delta} d late"
+            return _("%1 d late", -delta)
         if delta < 7:
             return self.due.strftime("%A").lower()
         return self.due.strftime("%-d %b").lower()
@@ -232,7 +413,7 @@ class CalDAV:
             h.update(headers)
         r = self.s.request(method, url, data=body.encode("utf-8") if isinstance(body, str) else body, headers=h, timeout=30)
         if r.status_code == 401:
-            raise CalDAVError("wrong username or app password")
+            raise CalDAVError(_("wrong username or app password"))
         if r.status_code >= 400:
             raise CalDAVError(f"{method} {url}: HTTP {r.status_code}")
         return r
@@ -281,7 +462,7 @@ class CalDAV:
                 lists.append((name or urlparse(url).path.rstrip("/").split("/")[-1], url))
             if lists:
                 return lists
-        raise CalDAVError("no task list found at this address")
+        raise CalDAVError(_("no task list found at this address"))
 
     def tasks(self, list_url):
         body = ('<?xml version="1.0" encoding="utf-8"?><c:calendar-query xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav">'
@@ -384,7 +565,7 @@ class TaskRow(QtWidgets.QWidget):
         self.box = QtWidgets.QLabel("☑" if done else "☐")
         self.box.setFont(big)
         self.box.setCursor(QtCore.Qt.PointingHandCursor)
-        self.box.setToolTip("reopen" if done else "complete")
+        self.box.setToolTip(_("reopen") if done else _("complete"))
         if done:
             self.box.setObjectName("dim")
         self.box.mousePressEvent = lambda e: (self.reopened if self.done else self.completed).emit(self.task)
@@ -436,10 +617,10 @@ class TaskRow(QtWidgets.QWidget):
     def _menu(self, pos):
         m = QtWidgets.QMenu(self)
         if self.done:
-            m.addAction("reopen", lambda: self.reopened.emit(self.task))
+            m.addAction(_("reopen"), lambda: self.reopened.emit(self.task))
         else:
-            m.addAction("complete", lambda: self.completed.emit(self.task))
-        m.addAction("delete", lambda: self.deleted.emit(self.task))
+            m.addAction(_("complete"), lambda: self.completed.emit(self.task))
+        m.addAction(_("delete"), lambda: self.deleted.emit(self.task))
         m.exec_(self.mapToGlobal(pos))
 
 
@@ -449,9 +630,7 @@ class SetupDialog(QtWidgets.QDialog):
         self.setWindowTitle("reader's tasks")
         form = QtWidgets.QFormLayout(self)
         form.setSpacing(12)
-        intro = QtWidgets.QLabel("CalDAV task lists. For Tasks.org Cloud: in the Android app,\n"
-                                 "⚙ › App settings › Tasks.org › Generate new password, and copy\n"
-                                 "the URL, username and app password shown there.")
+        intro = QtWidgets.QLabel(_("CalDAV task lists. For Tasks.org Cloud: in the Android app,\n⚙ › App settings › Tasks.org › Generate new password, and copy\nthe URL, username and app password shown there."))
         intro.setObjectName("dim")
         form.addRow(intro)
         self.url = QtWidgets.QLineEdit(cfg.get("url", ""))
@@ -459,18 +638,18 @@ class SetupDialog(QtWidgets.QDialog):
         self.user = QtWidgets.QLineEdit(cfg.get("username", ""))
         self.password = QtWidgets.QLineEdit(cfg.get("password", ""))
         self.password.setEchoMode(QtWidgets.QLineEdit.Password)
-        form.addRow("server", self.url)
-        form.addRow("username", self.user)
-        form.addRow("app password", self.password)
+        form.addRow(_("server"), self.url)
+        form.addRow(_("username"), self.user)
+        form.addRow(_("app password"), self.password)
         self.error = QtWidgets.QLabel("")
         self.error.setObjectName("dim")
         self.error.setWordWrap(True)
         form.addRow(self.error)
         row = QtWidgets.QHBoxLayout()
         row.addStretch(1)
-        cancel = QtWidgets.QPushButton("cancel")
+        cancel = QtWidgets.QPushButton(_("cancel"))
         cancel.clicked.connect(self.reject)
-        ok = QtWidgets.QPushButton("connect")
+        ok = QtWidgets.QPushButton(_("connect"))
         ok.setDefault(True)
         ok.clicked.connect(self.accept)
         row.addWidget(cancel)
@@ -538,7 +717,7 @@ class Main(QtWidgets.QMainWindow):
         right.addWidget(self.done_toggle)
 
         self.entry = QtWidgets.QLineEdit()
-        self.entry.setPlaceholderText("+ new task")
+        self.entry.setPlaceholderText(_("+ new task"))
         self.entry.setFrame(False)
         self.entry.returnPressed.connect(self.add_task)
         right.addWidget(self.entry)
@@ -549,7 +728,7 @@ class Main(QtWidgets.QMainWindow):
         bottom.addWidget(self.status, 1)
         self.gear = QtWidgets.QLabel("⚙")
         self.gear.setObjectName("dim")
-        self.gear.setToolTip("server settings (Ctrl+,)")
+        self.gear.setToolTip(_("server settings (Ctrl+,)"))
         self.gear.setCursor(QtCore.Qt.PointingHandCursor)
         self.gear.mousePressEvent = lambda e: self.setup()
         bottom.addWidget(self.gear, 0)
@@ -647,7 +826,7 @@ class Main(QtWidgets.QMainWindow):
         dlg = SetupDialog(self.cfg, self)
         if dlg.exec_() != QtWidgets.QDialog.Accepted:
             if not self.cfg.get("url"):
-                self.status.setText("not connected — Ctrl+, to set up")
+                self.status.setText(_("not connected — Ctrl+, to set up"))
             return
         self.cfg.update(dlg.values())
         save_config(self.cfg)
@@ -655,7 +834,7 @@ class Main(QtWidgets.QMainWindow):
 
     def connect_client(self):
         self.client = CalDAV(self.cfg["url"], self.cfg.get("username", ""), self.cfg.get("password", ""))
-        self.status.setText("connecting…")
+        self.status.setText(_("connecting…"))
         self.run(self.client.task_lists, self.got_lists)
 
     def got_lists(self, lists):
@@ -692,13 +871,13 @@ class Main(QtWidgets.QMainWindow):
         if 0 <= row < len(shown):
             url = shown[row][1]
             if row > 0:
-                m.addAction("move up", lambda: self.move_list(url, -1))
+                m.addAction(_("move up"), lambda: self.move_list(url, -1))
             if row < len(shown) - 1:
-                m.addAction("move down", lambda: self.move_list(url, 1))
-            m.addAction("hide this list", lambda: self.hide_list(url))
+                m.addAction(_("move down"), lambda: self.move_list(url, 1))
+            m.addAction(_("hide this list"), lambda: self.hide_list(url))
         hidden = [(n, u) for n, u in self.lists if u in set(self.cfg.get("hidden_lists", []))]
         if hidden:
-            sub = m.addMenu("show a hidden list")
+            sub = m.addMenu(_("show a hidden list"))
             for n, u in hidden:
                 sub.addAction(n, lambda u=u: self.unhide_list(u))
         m.exec_(self.lists_widget.mapToGlobal(pos))
@@ -736,7 +915,7 @@ class Main(QtWidgets.QMainWindow):
         url = self.current_list()
         if not self.client or not url:
             return
-        self.status.setText("syncing…")
+        self.status.setText(_("syncing…"))
         self.run(lambda: self.client.tasks(url), self.got_tasks)
 
     def got_tasks(self, tasks):
@@ -748,7 +927,7 @@ class Main(QtWidgets.QMainWindow):
         done.sort(key=lambda t: _prop(t.todo_lines, "COMPLETED") or "", reverse=True)
         self.done_tasks = done
         self.render_tasks()
-        self.status.setText(f"{len(open_tasks)} open · synced {datetime.now().strftime('%H:%M')}")
+        self.status.setText(_("%1 open · synced %2", len(open_tasks), datetime.now().strftime("%H:%M")))
 
     def toggle_done(self):
         self.show_done = not self.show_done
@@ -770,7 +949,7 @@ class Main(QtWidgets.QMainWindow):
             self.rows.insertWidget(i, row); i += 1
             self.open_rows.append(row)
         if not self.tasks and self.client:
-            empty = QtWidgets.QLabel("no open task")
+            empty = QtWidgets.QLabel(_("no open task"))
             empty.setObjectName("dim")
             empty.setFont(self.big)
             self.rows.insertWidget(i, empty); i += 1
@@ -781,7 +960,7 @@ class Main(QtWidgets.QMainWindow):
                 row.deleted.connect(self.delete_task)
                 self.rows.insertWidget(i, row); i += 1
         n = len(self.done_tasks)
-        self.done_toggle.setText("" if not n else (f"hide {n} done" if self.show_done else f"show {n} done"))
+        self.done_toggle.setText("" if not n else (_("hide %1 done", n) if self.show_done else _("show %1 done", n)))
 
     # ---- manual order -------------------------------------------------------------------
 
@@ -813,7 +992,7 @@ class Main(QtWidgets.QMainWindow):
         changes = plan_sort_orders(list(self.tasks))
         if not changes:
             return
-        self.status.setText("saving order…")
+        self.status.setText(_("saving order…"))
 
         def apply():
             for t, v in changes.items():
@@ -826,7 +1005,7 @@ class Main(QtWidgets.QMainWindow):
         if not text or not url or not self.client:
             return
         self.entry.clear()
-        self.status.setText("adding…")
+        self.status.setText(_("adding…"))
         self.run(lambda: self.client.add(url, text), lambda _: self.sync())
 
     def complete_task(self, task):
