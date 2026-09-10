@@ -99,7 +99,8 @@ _TR = {
   "%1 d late": "%1 j de retard",
   "wrong username or app password": "identifiant ou mot de passe d'application incorrect",
   "no task list found at this address": "aucune liste de tâches à cette adresse",
-  "CalDAV task lists. For Tasks.org Cloud: in the Android app,\\n⚙ › App settings › Tasks.org › Generate new password, and copy\\nthe URL, username and app password shown there.": "Listes de tâches CalDAV. Tasks.org Cloud : dans l'app Android,\\n⚙ › Paramètres › Tasks.org › Générer un nouveau mot de passe, puis copier\\nl'URL, l'identifiant et le mot de passe d'application affichés."
+  "CalDAV task lists. For Tasks.org Cloud: in the Android app,\\n⚙ › App settings › Tasks.org › Generate new password, and copy\\nthe URL, username and app password shown there.": "Listes de tâches CalDAV. Tasks.org Cloud : dans l'app Android,\\n⚙ › Paramètres › Tasks.org › Générer un nouveau mot de passe, puis copier\\nl'URL, l'identifiant et le mot de passe d'application affichés.",
+  "Pierre Gallaz · developed with Claude Code": "Pierre Gallaz · développé avec Claude Code"
  },
  "de": {
   "reopen": "wieder öffnen",
@@ -130,7 +131,8 @@ _TR = {
   "%1 d late": "%1 T. überfällig",
   "wrong username or app password": "falscher Benutzername oder falsches App-Passwort",
   "no task list found at this address": "keine Aufgabenliste unter dieser Adresse",
-  "CalDAV task lists. For Tasks.org Cloud: in the Android app,\\n⚙ › App settings › Tasks.org › Generate new password, and copy\\nthe URL, username and app password shown there.": "CalDAV-Aufgabenlisten. Tasks.org Cloud: in der Android-App\\n⚙ › App-Einstellungen › Tasks.org › Neues Passwort erzeugen, dann URL,\\nBenutzername und App-Passwort von dort kopieren."
+  "CalDAV task lists. For Tasks.org Cloud: in the Android app,\\n⚙ › App settings › Tasks.org › Generate new password, and copy\\nthe URL, username and app password shown there.": "CalDAV-Aufgabenlisten. Tasks.org Cloud: in der Android-App\\n⚙ › App-Einstellungen › Tasks.org › Neues Passwort erzeugen, dann URL,\\nBenutzername und App-Passwort von dort kopieren.",
+  "Pierre Gallaz · developed with Claude Code": "Pierre Gallaz · entwickelt mit Claude Code"
  },
  "es": {
   "reopen": "reabrir",
@@ -161,7 +163,8 @@ _TR = {
   "%1 d late": "%1 d de retraso",
   "wrong username or app password": "usuario o contraseña de aplicación incorrectos",
   "no task list found at this address": "ninguna lista de tareas en esta dirección",
-  "CalDAV task lists. For Tasks.org Cloud: in the Android app,\\n⚙ › App settings › Tasks.org › Generate new password, and copy\\nthe URL, username and app password shown there.": "Listas de tareas CalDAV. Tasks.org Cloud: en la app Android,\\n⚙ › Ajustes › Tasks.org › Generar nueva contraseña, y copia\\nla URL, el usuario y la contraseña de aplicación mostrados."
+  "CalDAV task lists. For Tasks.org Cloud: in the Android app,\\n⚙ › App settings › Tasks.org › Generate new password, and copy\\nthe URL, username and app password shown there.": "Listas de tareas CalDAV. Tasks.org Cloud: en la app Android,\\n⚙ › Ajustes › Tasks.org › Generar nueva contraseña, y copia\\nla URL, el usuario y la contraseña de aplicación mostrados.",
+  "Pierre Gallaz · developed with Claude Code": "Pierre Gallaz · desarrollado con Claude Code"
  },
  "pt": {
   "reopen": "reabrir",
@@ -192,7 +195,8 @@ _TR = {
   "%1 d late": "%1 d de atraso",
   "wrong username or app password": "utilizador ou palavra-passe de aplicação errados",
   "no task list found at this address": "nenhuma lista de tarefas neste endereço",
-  "CalDAV task lists. For Tasks.org Cloud: in the Android app,\\n⚙ › App settings › Tasks.org › Generate new password, and copy\\nthe URL, username and app password shown there.": "Listas de tarefas CalDAV. Tasks.org Cloud: na app Android,\\n⚙ › Definições › Tasks.org › Gerar nova palavra-passe, e copie\\no URL, o utilizador e a palavra-passe de aplicação mostrados."
+  "CalDAV task lists. For Tasks.org Cloud: in the Android app,\\n⚙ › App settings › Tasks.org › Generate new password, and copy\\nthe URL, username and app password shown there.": "Listas de tarefas CalDAV. Tasks.org Cloud: na app Android,\\n⚙ › Definições › Tasks.org › Gerar nova palavra-passe, e copie\\no URL, o utilizador e a palavra-passe de aplicação mostrados.",
+  "Pierre Gallaz · developed with Claude Code": "Pierre Gallaz · desenvolvido com Claude Code"
  },
  "ru": {
   "reopen": "открыть заново",
@@ -223,7 +227,8 @@ _TR = {
   "%1 d late": "просрочено %1 д",
   "wrong username or app password": "неверное имя пользователя или пароль приложения",
   "no task list found at this address": "по этому адресу нет списков задач",
-  "CalDAV task lists. For Tasks.org Cloud: in the Android app,\\n⚙ › App settings › Tasks.org › Generate new password, and copy\\nthe URL, username and app password shown there.": "Списки задач CalDAV. Tasks.org Cloud: в приложении Android\\n⚙ › Настройки › Tasks.org › Создать новый пароль, затем скопировать\\nURL, имя пользователя и пароль приложения оттуда."
+  "CalDAV task lists. For Tasks.org Cloud: in the Android app,\\n⚙ › App settings › Tasks.org › Generate new password, and copy\\nthe URL, username and app password shown there.": "Списки задач CalDAV. Tasks.org Cloud: в приложении Android\\n⚙ › Настройки › Tasks.org › Создать новый пароль, затем скопировать\\nURL, имя пользователя и пароль приложения оттуда.",
+  "Pierre Gallaz · developed with Claude Code": "Pierre Gallaz · разработано с Claude Code"
  }
 }
 
@@ -655,7 +660,10 @@ class SetupDialog(QtWidgets.QDialog):
         row.addWidget(cancel)
         row.addWidget(ok)
         form.addRow(row)
-        self.resize(560, 320)
+        credits = QtWidgets.QLabel(f"reader's tasks {VERSION} · " + _("Pierre Gallaz · developed with Claude Code"))
+        credits.setObjectName("dim")
+        form.addRow(credits)
+        self.resize(560, 340)
 
     def values(self):
         return {"url": self.url.text().strip(), "username": self.user.text().strip(), "password": self.password.text()}

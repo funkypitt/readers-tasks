@@ -81,3 +81,11 @@ packaging/build-deb.sh
 
 Single file, PyQt5 + requests, no CalDAV library: discovery, listing, adding and completing
 are four HTTP requests. MIT.
+
+## Crédits / Credits
+
+© 2026 Pierre Gallaz. Développé avec [Claude Code](https://claude.com/claude-code) (Anthropic).
+Licence MIT, voir `LICENSE`.
+
+© 2026 Pierre Gallaz. Developed with [Claude Code](https://claude.com/claude-code) (Anthropic).
+MIT licence, see `LICENSE`.
