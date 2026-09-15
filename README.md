@@ -12,7 +12,7 @@ to tick, a line at the bottom to add. White on black or black on white. Nothing 
 Debian, Ubuntu, Pop!_OS:
 
 ```
-sudo apt install ./readers-tasks_1.3.0_all.deb
+sudo apt install ./readers-tasks_1.4.0_all.deb
 ```
 
 Arch, Manjaro:
@@ -41,8 +41,9 @@ English, French, German, Spanish, Portuguese and Russian, following the system l
 |---|---|
 | Enter in the bottom line | add the task to the current list |
 | click ☐ | complete |
+| double-click on a task | rename it |
 | drag a task up or down | put the open tasks in your own order (saved on the server as X-APPLE-SORT-ORDER, so the phone shows the same order) |
-| right click on a task | complete · delete |
+| right click on a task | complete · rename · delete |
 | Ctrl+T | flip white on black / black on white |
 | Ctrl+= / Ctrl+- | larger / smaller text |
 | F5 or Ctrl+R | sync now (also every 5 minutes) |

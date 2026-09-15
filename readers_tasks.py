@@ -17,7 +17,7 @@ import requests
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 APP = "readers-tasks"
-VERSION = "1.3.0"
+VERSION = "1.4.0"
 CONFIG_DIR = os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), APP)
 CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
 SYNC_MINUTES = 5
@@ -74,6 +74,8 @@ _TR = {
   "reopen": "rouvrir",
   "complete": "terminer",
   "delete": "supprimer",
+  "rename": "renommer",
+  "task": "tâche",
   "server": "serveur",
   "username": "identifiant",
   "app password": "mot de passe d'application",
@@ -94,6 +96,7 @@ _TR = {
   "show %1 done": "afficher %1 terminées",
   "saving order…": "enregistrement de l'ordre…",
   "adding…": "ajout…",
+  "renaming…": "renommage…",
   "today": "aujourd'hui",
   "tomorrow": "demain",
   "%1 d late": "%1 j de retard",
@@ -106,6 +109,8 @@ _TR = {
   "reopen": "wieder öffnen",
   "complete": "erledigt",
   "delete": "löschen",
+  "rename": "umbenennen",
+  "task": "Aufgabe",
   "server": "Server",
   "username": "Benutzername",
   "app password": "App-Passwort",
@@ -126,6 +131,7 @@ _TR = {
   "show %1 done": "%1 erledigte zeigen",
   "saving order…": "Reihenfolge wird gespeichert…",
   "adding…": "füge hinzu…",
+  "renaming…": "wird umbenannt…",
   "today": "heute",
   "tomorrow": "morgen",
   "%1 d late": "%1 T. überfällig",
@@ -138,6 +144,8 @@ _TR = {
   "reopen": "reabrir",
   "complete": "completar",
   "delete": "eliminar",
+  "rename": "renombrar",
+  "task": "tarea",
   "server": "servidor",
   "username": "usuario",
   "app password": "contraseña de aplicación",
@@ -158,6 +166,7 @@ _TR = {
   "show %1 done": "mostrar %1 hechas",
   "saving order…": "guardando el orden…",
   "adding…": "añadiendo…",
+  "renaming…": "renombrando…",
   "today": "hoy",
   "tomorrow": "mañana",
   "%1 d late": "%1 d de retraso",
@@ -170,6 +179,8 @@ _TR = {
   "reopen": "reabrir",
   "complete": "concluir",
   "delete": "apagar",
+  "rename": "mudar o nome",
+  "task": "tarefa",
   "server": "servidor",
   "username": "utilizador",
   "app password": "palavra-passe de aplicação",
@@ -190,6 +201,7 @@ _TR = {
   "show %1 done": "mostrar %1 feitas",
   "saving order…": "a guardar a ordem…",
   "adding…": "a adicionar…",
+  "renaming…": "a mudar o nome…",
   "today": "hoje",
   "tomorrow": "amanhã",
   "%1 d late": "%1 d de atraso",
@@ -202,6 +214,8 @@ _TR = {
   "reopen": "открыть заново",
   "complete": "выполнить",
   "delete": "удалить",
+  "rename": "переименовать",
+  "task": "задача",
   "server": "сервер",
   "username": "имя пользователя",
   "app password": "пароль приложения",
@@ -222,6 +236,7 @@ _TR = {
   "show %1 done": "показать %1 выполненных",
   "saving order…": "сохранение порядка…",
   "adding…": "добавление…",
+  "renaming…": "переименование…",
   "today": "сегодня",
   "tomorrow": "завтра",
   "%1 d late": "просрочено %1 д",
@@ -373,6 +388,24 @@ def _reopened_ics(task):
     return "\r\n".join(_fold(l) for l in out) + "\r\n"
 
 
+def _with_summary(ics, summary):
+    """The same VTODO with SUMMARY replaced."""
+    lines = _unfold(ics)
+    out, in_todo = [], False
+    for l in lines:
+        u = l.upper()
+        if u.startswith("BEGIN:VTODO"):
+            in_todo = True
+        if in_todo and u.split(":", 1)[0].split(";", 1)[0] in ("SUMMARY", "LAST-MODIFIED", "DTSTAMP"):
+            continue
+        if u.startswith("END:VTODO"):
+            now = _utcnow()
+            out += [f"DTSTAMP:{now}", f"LAST-MODIFIED:{now}", f"SUMMARY:{_escape(summary)}"]
+            in_todo = False
+        out.append(l)
+    return "\r\n".join(_fold(l) for l in out) + "\r\n"
+
+
 def _parse_date(v):
     if not v:
         return None
@@ -508,6 +541,12 @@ class CalDAV:
             headers["If-Match"] = task.etag
         self._req("PUT", task.href, _reopened_ics(task), headers=headers)
 
+    def rename(self, task, summary):
+        headers = {"Content-Type": "text/calendar; charset=utf-8"}
+        if task.etag:
+            headers["If-Match"] = task.etag
+        self._req("PUT", task.href, _with_summary(task.ics, summary), headers=headers)
+
     def delete(self, task):
         self._req("DELETE", task.href)
 
@@ -557,6 +596,7 @@ class TaskRow(QtWidgets.QWidget):
     completed = QtCore.pyqtSignal(object)
     reopened = QtCore.pyqtSignal(object)
     deleted = QtCore.pyqtSignal(object)
+    renamed = QtCore.pyqtSignal(object)
     drag_moved = QtCore.pyqtSignal(object, int)   # (task, global y)
     drag_ended = QtCore.pyqtSignal(object)
 
@@ -580,6 +620,7 @@ class TaskRow(QtWidgets.QWidget):
         title = QtWidgets.QLabel(task.summary or "…")
         title.setFont(big)
         title.setWordWrap(True)
+        title.setToolTip(_("rename"))
         if done:
             title.setObjectName("dim")
         col.addWidget(title)
@@ -610,6 +651,15 @@ class TaskRow(QtWidgets.QWidget):
             self.drag_moved.emit(self.task, e.globalPos().y())
         super().mouseMoveEvent(e)
 
+    # Double-click on the text renames (a single left click starts a drag on the desktop).
+    def mouseDoubleClickEvent(self, e):
+        if e.button() == QtCore.Qt.LeftButton and not self.box.geometry().contains(e.pos()):
+            self._press = None
+            self._dragging = False
+            self.renamed.emit(self.task)
+            return
+        super().mouseDoubleClickEvent(e)
+
     def mouseReleaseEvent(self, e):
         if self._dragging:
             self.drag_ended.emit(self.task)
@@ -625,6 +675,7 @@ class TaskRow(QtWidgets.QWidget):
             m.addAction(_("reopen"), lambda: self.reopened.emit(self.task))
         else:
             m.addAction(_("complete"), lambda: self.completed.emit(self.task))
+        m.addAction(_("rename"), lambda: self.renamed.emit(self.task))
         m.addAction(_("delete"), lambda: self.deleted.emit(self.task))
         m.exec_(self.mapToGlobal(pos))
 
@@ -951,6 +1002,7 @@ class Main(QtWidgets.QMainWindow):
         for t in self.tasks:
             row = TaskRow(t, self.big, self.small)
             row.completed.connect(self.complete_task)
+            row.renamed.connect(self.rename_task)
             row.deleted.connect(self.delete_task)
             row.drag_moved.connect(self.drag_row)
             row.drag_ended.connect(self.drop_row)
@@ -965,6 +1017,7 @@ class Main(QtWidgets.QMainWindow):
             for t in self.done_tasks:
                 row = TaskRow(t, self.big, self.small, done=True)
                 row.reopened.connect(self.reopen_task)
+                row.renamed.connect(self.rename_task)
                 row.deleted.connect(self.delete_task)
                 self.rows.insertWidget(i, row); i += 1
         n = len(self.done_tasks)
@@ -1025,6 +1078,27 @@ class Main(QtWidgets.QMainWindow):
         self.done_tasks = [t for t in self.done_tasks if t is not task]
         self.render_tasks()
         self.run(lambda: self.client.reopen(task), lambda _: self.sync())
+
+    def rename_task(self, task):
+        if not self.client:
+            return
+        dlg = QtWidgets.QInputDialog(self)
+        dlg.setWindowTitle(_("rename"))
+        dlg.setLabelText(_("task"))
+        dlg.setTextValue(task.summary)
+        dlg.setInputMode(QtWidgets.QInputDialog.TextInput)
+        dlg.setOkButtonText(_("rename"))
+        dlg.setCancelButtonText(_("cancel"))
+        dlg.resize(max(420, self.width() // 2), dlg.height())
+        if dlg.exec_() != QtWidgets.QDialog.Accepted:
+            return
+        text = dlg.textValue().strip()
+        if not text or text == task.summary:
+            return
+        task.summary = text
+        self.render_tasks()
+        self.status.setText(_("renaming…"))
+        self.run(lambda: self.client.rename(task, text), lambda _: self.sync())
 
     def delete_task(self, task):
         self.tasks = [t for t in self.tasks if t is not task]
