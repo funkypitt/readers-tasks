@@ -572,6 +572,7 @@ def save_config(cfg):
     os.replace(tmp, CONFIG_FILE)
 
 CREDENTIAL_KEYS = ('url', 'username', 'password')
+CREDENTIAL_FALLBACK = {}   # when this app's section is absent: another app's section, these keys only
 
 
 # ------------------------------------------------------------------------------------------
@@ -586,19 +587,19 @@ CREDENTIALS_FORMAT = "readers-credentials"
 _CRED_TR = {
  "fr": {"import credentials…": "importer les identifiants…", "export credentials…": "exporter les identifiants…", "Reader's credentials (*.json)": "Identifiants Reader's (*.json)",
         "credentials exported to %1 — the file holds your passwords: keep it private": "identifiants exportés dans %1 — le fichier contient vos mots de passe : gardez-le privé",
-        "credentials imported": "identifiants importés", "not a Reader's credentials file": "ce n'est pas un fichier d'identifiants Reader's", "this file holds nothing for %1": "ce fichier ne contient rien pour %1"},
+        "credentials imported": "identifiants importés", "server and login taken from %1": "serveur et identifiants repris de %1", "not a Reader's credentials file": "ce n'est pas un fichier d'identifiants Reader's", "this file holds nothing for %1": "ce fichier ne contient rien pour %1"},
  "de": {"import credentials…": "Zugangsdaten importieren…", "export credentials…": "Zugangsdaten exportieren…", "Reader's credentials (*.json)": "Reader's-Zugangsdaten (*.json)",
         "credentials exported to %1 — the file holds your passwords: keep it private": "Zugangsdaten nach %1 exportiert — die Datei enthält Ihre Passwörter: halten Sie sie privat",
-        "credentials imported": "Zugangsdaten importiert", "not a Reader's credentials file": "keine Reader's-Zugangsdatendatei", "this file holds nothing for %1": "diese Datei enthält nichts für %1"},
+        "credentials imported": "Zugangsdaten importiert", "server and login taken from %1": "Server und Anmeldung aus %1 übernommen", "not a Reader's credentials file": "keine Reader's-Zugangsdatendatei", "this file holds nothing for %1": "diese Datei enthält nichts für %1"},
  "es": {"import credentials…": "importar credenciales…", "export credentials…": "exportar credenciales…", "Reader's credentials (*.json)": "Credenciales Reader's (*.json)",
         "credentials exported to %1 — the file holds your passwords: keep it private": "credenciales exportadas a %1 — el archivo contiene sus contraseñas: manténgalo privado",
-        "credentials imported": "credenciales importadas", "not a Reader's credentials file": "no es un archivo de credenciales Reader's", "this file holds nothing for %1": "este archivo no contiene nada para %1"},
+        "credentials imported": "credenciales importadas", "server and login taken from %1": "servidor y usuario tomados de %1", "not a Reader's credentials file": "no es un archivo de credenciales Reader's", "this file holds nothing for %1": "este archivo no contiene nada para %1"},
  "pt": {"import credentials…": "importar credenciais…", "export credentials…": "exportar credenciais…", "Reader's credentials (*.json)": "Credenciais Reader's (*.json)",
         "credentials exported to %1 — the file holds your passwords: keep it private": "credenciais exportadas para %1 — o ficheiro contém as suas palavras-passe: mantenha-o privado",
-        "credentials imported": "credenciais importadas", "not a Reader's credentials file": "não é um ficheiro de credenciais Reader's", "this file holds nothing for %1": "este ficheiro não contém nada para %1"},
+        "credentials imported": "credenciais importadas", "server and login taken from %1": "servidor e utilizador retirados de %1", "not a Reader's credentials file": "não é um ficheiro de credenciais Reader's", "this file holds nothing for %1": "este ficheiro não contém nada para %1"},
  "ru": {"import credentials…": "импортировать учётные данные…", "export credentials…": "экспортировать учётные данные…", "Reader's credentials (*.json)": "Учётные данные Reader's (*.json)",
         "credentials exported to %1 — the file holds your passwords: keep it private": "учётные данные экспортированы в %1 — файл содержит ваши пароли: храните его в тайне",
-        "credentials imported": "учётные данные импортированы", "not a Reader's credentials file": "это не файл учётных данных Reader's", "this file holds nothing for %1": "в этом файле нет ничего для %1"},
+        "credentials imported": "учётные данные импортированы", "server and login taken from %1": "сервер и логин взяты из %1", "not a Reader's credentials file": "это не файл учётных данных Reader's", "this file holds nothing for %1": "в этом файле нет ничего для %1"},
 }
 for _l, _d in _CRED_TR.items():
     _TR.setdefault(_l, {}).update(_d)
@@ -638,12 +639,18 @@ def import_credentials(cfg, path):
     if not isinstance(data, dict) or data.get("format") != CREDENTIALS_FORMAT:
         raise ValueError(_("not a Reader's credentials file"))
     section = data.get(APP)
+    message = _("credentials imported")
+    keys = CREDENTIAL_KEYS
     if not isinstance(section, dict) or not section:
-        raise ValueError(_("this file holds nothing for %1", APP))
-    for k in CREDENTIAL_KEYS:
+        other = next((name for name in CREDENTIAL_FALLBACK if isinstance(data.get(name), dict) and data[name]), None)
+        if other is None:
+            raise ValueError(_("this file holds nothing for %1", APP))
+        section, keys = data[other], CREDENTIAL_FALLBACK[other]
+        message = _("server and login taken from %1", "Reader's " + other.split("-", 1)[1].capitalize())
+    for k in keys:
         if k in section:
             cfg[k] = section[k]
-    return cfg
+    return message
 
 
 def credentials_cli(argv):
@@ -659,7 +666,7 @@ def credentials_cli(argv):
                 if flag == "--export-credentials":
                     print(_("credentials exported to %1 — the file holds your passwords: keep it private", export_credentials(cfg, path)))
                 else:
-                    save_config(import_credentials(cfg, path)); print(_("credentials imported"))
+                    message = import_credentials(cfg, path); save_config(cfg); print(message)
             except (OSError, ValueError) as e:
                 print(str(e), file=sys.stderr); sys.exit(1)
             sys.exit(0)
@@ -678,8 +685,7 @@ def credentials_dialog(parent, export, cfg):
     try:
         if export:
             return True, _("credentials exported to %1 — the file holds your passwords: keep it private", export_credentials(cfg, path))
-        import_credentials(cfg, path)
-        return True, _("credentials imported")
+        return True, import_credentials(cfg, path)
     except (OSError, ValueError) as e:
         return False, str(e)
 
