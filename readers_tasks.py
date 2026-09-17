@@ -17,7 +17,7 @@ import requests
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 APP = "readers-tasks"
-VERSION = "1.4.0"
+VERSION = "1.5.0"
 CONFIG_DIR = os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), APP)
 CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
 SYNC_MINUTES = 5
@@ -102,7 +102,7 @@ _TR = {
   "%1 d late": "%1 j de retard",
   "wrong username or app password": "identifiant ou mot de passe d'application incorrect",
   "no task list found at this address": "aucune liste de tâches à cette adresse",
-  "CalDAV task lists. For Tasks.org Cloud: in the Android app,\\n⚙ › App settings › Tasks.org › Generate new password, and copy\\nthe URL, username and app password shown there.": "Listes de tâches CalDAV. Tasks.org Cloud : dans l'app Android,\\n⚙ › Paramètres › Tasks.org › Générer un nouveau mot de passe, puis copier\\nl'URL, l'identifiant et le mot de passe d'application affichés.",
+  "CalDAV task lists. For Tasks.org Cloud: in the Android app,\n⚙ › App settings › Tasks.org › Generate new password, and copy\nthe URL, username and app password shown there.": "Listes de tâches CalDAV. Tasks.org Cloud : dans l'app Android,\n⚙ › Paramètres › Tasks.org › Générer un nouveau mot de passe, puis copier\nl'URL, l'identifiant et le mot de passe d'application affichés.",
   "Pierre Gallaz · developed with Claude Code": "Pierre Gallaz · développé avec Claude Code"
  },
  "de": {
@@ -137,7 +137,7 @@ _TR = {
   "%1 d late": "%1 T. überfällig",
   "wrong username or app password": "falscher Benutzername oder falsches App-Passwort",
   "no task list found at this address": "keine Aufgabenliste unter dieser Adresse",
-  "CalDAV task lists. For Tasks.org Cloud: in the Android app,\\n⚙ › App settings › Tasks.org › Generate new password, and copy\\nthe URL, username and app password shown there.": "CalDAV-Aufgabenlisten. Tasks.org Cloud: in der Android-App\\n⚙ › App-Einstellungen › Tasks.org › Neues Passwort erzeugen, dann URL,\\nBenutzername und App-Passwort von dort kopieren.",
+  "CalDAV task lists. For Tasks.org Cloud: in the Android app,\n⚙ › App settings › Tasks.org › Generate new password, and copy\nthe URL, username and app password shown there.": "CalDAV-Aufgabenlisten. Tasks.org Cloud: in der Android-App\n⚙ › App-Einstellungen › Tasks.org › Neues Passwort erzeugen, dann URL,\nBenutzername und App-Passwort von dort kopieren.",
   "Pierre Gallaz · developed with Claude Code": "Pierre Gallaz · entwickelt mit Claude Code"
  },
  "es": {
@@ -172,7 +172,7 @@ _TR = {
   "%1 d late": "%1 d de retraso",
   "wrong username or app password": "usuario o contraseña de aplicación incorrectos",
   "no task list found at this address": "ninguna lista de tareas en esta dirección",
-  "CalDAV task lists. For Tasks.org Cloud: in the Android app,\\n⚙ › App settings › Tasks.org › Generate new password, and copy\\nthe URL, username and app password shown there.": "Listas de tareas CalDAV. Tasks.org Cloud: en la app Android,\\n⚙ › Ajustes › Tasks.org › Generar nueva contraseña, y copia\\nla URL, el usuario y la contraseña de aplicación mostrados.",
+  "CalDAV task lists. For Tasks.org Cloud: in the Android app,\n⚙ › App settings › Tasks.org › Generate new password, and copy\nthe URL, username and app password shown there.": "Listas de tareas CalDAV. Tasks.org Cloud: en la app Android,\n⚙ › Ajustes › Tasks.org › Generar nueva contraseña, y copia\nla URL, el usuario y la contraseña de aplicación mostrados.",
   "Pierre Gallaz · developed with Claude Code": "Pierre Gallaz · desarrollado con Claude Code"
  },
  "pt": {
@@ -207,7 +207,7 @@ _TR = {
   "%1 d late": "%1 d de atraso",
   "wrong username or app password": "utilizador ou palavra-passe de aplicação errados",
   "no task list found at this address": "nenhuma lista de tarefas neste endereço",
-  "CalDAV task lists. For Tasks.org Cloud: in the Android app,\\n⚙ › App settings › Tasks.org › Generate new password, and copy\\nthe URL, username and app password shown there.": "Listas de tarefas CalDAV. Tasks.org Cloud: na app Android,\\n⚙ › Definições › Tasks.org › Gerar nova palavra-passe, e copie\\no URL, o utilizador e a palavra-passe de aplicação mostrados.",
+  "CalDAV task lists. For Tasks.org Cloud: in the Android app,\n⚙ › App settings › Tasks.org › Generate new password, and copy\nthe URL, username and app password shown there.": "Listas de tarefas CalDAV. Tasks.org Cloud: na app Android,\n⚙ › Definições › Tasks.org › Gerar nova palavra-passe, e copie\no URL, o utilizador e a palavra-passe de aplicação mostrados.",
   "Pierre Gallaz · developed with Claude Code": "Pierre Gallaz · desenvolvido com Claude Code"
  },
  "ru": {
@@ -242,7 +242,7 @@ _TR = {
   "%1 d late": "просрочено %1 д",
   "wrong username or app password": "неверное имя пользователя или пароль приложения",
   "no task list found at this address": "по этому адресу нет списков задач",
-  "CalDAV task lists. For Tasks.org Cloud: in the Android app,\\n⚙ › App settings › Tasks.org › Generate new password, and copy\\nthe URL, username and app password shown there.": "Списки задач CalDAV. Tasks.org Cloud: в приложении Android\\n⚙ › Настройки › Tasks.org › Создать новый пароль, затем скопировать\\nURL, имя пользователя и пароль приложения оттуда.",
+  "CalDAV task lists. For Tasks.org Cloud: in the Android app,\n⚙ › App settings › Tasks.org › Generate new password, and copy\nthe URL, username and app password shown there.": "Списки задач CalDAV. Tasks.org Cloud: в приложении Android\n⚙ › Настройки › Tasks.org › Создать новый пароль, затем скопировать\nURL, имя пользователя и пароль приложения оттуда.",
   "Pierre Gallaz · developed with Claude Code": "Pierre Gallaz · разработано с Claude Code"
  }
 }
@@ -571,6 +571,118 @@ def save_config(cfg):
     os.chmod(tmp, 0o600)
     os.replace(tmp, CONFIG_FILE)
 
+CREDENTIAL_KEYS = ('url', 'username', 'password')
+
+
+# ------------------------------------------------------------------------------------------
+# Credentials file: the accounts of every Reader's desktop app in one JSON file, to set up a new
+# computer in one step. One section per app; exporting adds or replaces this app's section and
+# keeps the others, so Calendar, Tasks and Notes can share the same file. It holds passwords
+# and tokens in clear: it is written readable by its owner only.
+# ------------------------------------------------------------------------------------------
+
+CREDENTIALS_FORMAT = "readers-credentials"
+
+_CRED_TR = {
+ "fr": {"import credentials…": "importer les identifiants…", "export credentials…": "exporter les identifiants…", "Reader's credentials (*.json)": "Identifiants Reader's (*.json)",
+        "credentials exported to %1 — the file holds your passwords: keep it private": "identifiants exportés dans %1 — le fichier contient vos mots de passe : gardez-le privé",
+        "credentials imported": "identifiants importés", "not a Reader's credentials file": "ce n'est pas un fichier d'identifiants Reader's", "this file holds nothing for %1": "ce fichier ne contient rien pour %1"},
+ "de": {"import credentials…": "Zugangsdaten importieren…", "export credentials…": "Zugangsdaten exportieren…", "Reader's credentials (*.json)": "Reader's-Zugangsdaten (*.json)",
+        "credentials exported to %1 — the file holds your passwords: keep it private": "Zugangsdaten nach %1 exportiert — die Datei enthält Ihre Passwörter: halten Sie sie privat",
+        "credentials imported": "Zugangsdaten importiert", "not a Reader's credentials file": "keine Reader's-Zugangsdatendatei", "this file holds nothing for %1": "diese Datei enthält nichts für %1"},
+ "es": {"import credentials…": "importar credenciales…", "export credentials…": "exportar credenciales…", "Reader's credentials (*.json)": "Credenciales Reader's (*.json)",
+        "credentials exported to %1 — the file holds your passwords: keep it private": "credenciales exportadas a %1 — el archivo contiene sus contraseñas: manténgalo privado",
+        "credentials imported": "credenciales importadas", "not a Reader's credentials file": "no es un archivo de credenciales Reader's", "this file holds nothing for %1": "este archivo no contiene nada para %1"},
+ "pt": {"import credentials…": "importar credenciais…", "export credentials…": "exportar credenciais…", "Reader's credentials (*.json)": "Credenciais Reader's (*.json)",
+        "credentials exported to %1 — the file holds your passwords: keep it private": "credenciais exportadas para %1 — o ficheiro contém as suas palavras-passe: mantenha-o privado",
+        "credentials imported": "credenciais importadas", "not a Reader's credentials file": "não é um ficheiro de credenciais Reader's", "this file holds nothing for %1": "este ficheiro não contém nada para %1"},
+ "ru": {"import credentials…": "импортировать учётные данные…", "export credentials…": "экспортировать учётные данные…", "Reader's credentials (*.json)": "Учётные данные Reader's (*.json)",
+        "credentials exported to %1 — the file holds your passwords: keep it private": "учётные данные экспортированы в %1 — файл содержит ваши пароли: храните его в тайне",
+        "credentials imported": "учётные данные импортированы", "not a Reader's credentials file": "это не файл учётных данных Reader's", "this file holds nothing for %1": "в этом файле нет ничего для %1"},
+}
+for _l, _d in _CRED_TR.items():
+    _TR.setdefault(_l, {}).update(_d)
+
+
+def export_credentials(cfg, path):
+    """Write this app's accounts into the file at path (created, or merged into an existing
+    credentials file)."""
+    path = os.path.expanduser(path)
+    data = {}
+    if os.path.exists(path) and os.path.getsize(path) > 0:
+        with open(path, encoding="utf-8") as f:
+            try:
+                data = json.load(f)
+            except ValueError:
+                raise ValueError(_("not a Reader's credentials file"))
+        if not isinstance(data, dict) or data.get("format") != CREDENTIALS_FORMAT:
+            raise ValueError(_("not a Reader's credentials file"))
+    data.update({"format": CREDENTIALS_FORMAT, "version": 1})
+    data[APP] = {k: cfg[k] for k in CREDENTIAL_KEYS if cfg.get(k) not in (None, "", [], {})}
+    tmp = path + ".tmp"
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+    os.chmod(tmp, 0o600)
+    os.replace(tmp, path)
+    return path
+
+
+def import_credentials(cfg, path):
+    """Take this app's accounts from a credentials file into cfg (the look and the rest stay)."""
+    with open(os.path.expanduser(path), encoding="utf-8") as f:
+        try:
+            data = json.load(f)
+        except ValueError:
+            raise ValueError(_("not a Reader's credentials file"))
+    if not isinstance(data, dict) or data.get("format") != CREDENTIALS_FORMAT:
+        raise ValueError(_("not a Reader's credentials file"))
+    section = data.get(APP)
+    if not isinstance(section, dict) or not section:
+        raise ValueError(_("this file holds nothing for %1", APP))
+    for k in CREDENTIAL_KEYS:
+        if k in section:
+            cfg[k] = section[k]
+    return cfg
+
+
+def credentials_cli(argv):
+    """readers-… --export-credentials FILE / --import-credentials FILE, without opening a window."""
+    for flag in ("--export-credentials", "--import-credentials"):
+        if flag in argv:
+            i = argv.index(flag)
+            if i + 1 >= len(argv):
+                print(f"{flag} FILE", file=sys.stderr); sys.exit(2)
+            path = argv[i + 1]
+            cfg = load_config()
+            try:
+                if flag == "--export-credentials":
+                    print(_("credentials exported to %1 — the file holds your passwords: keep it private", export_credentials(cfg, path)))
+                else:
+                    save_config(import_credentials(cfg, path)); print(_("credentials imported"))
+            except (OSError, ValueError) as e:
+                print(str(e), file=sys.stderr); sys.exit(1)
+            sys.exit(0)
+
+
+def credentials_dialog(parent, export, cfg):
+    """The file picker for export (merging) or import. Returns (ok, message)."""
+    title = _("export credentials…") if export else _("import credentials…")
+    start = os.path.expanduser("~/readers-credentials.json")
+    if export:
+        path, _f = QtWidgets.QFileDialog.getSaveFileName(parent, title, start, _("Reader's credentials (*.json)"), options=QtWidgets.QFileDialog.DontConfirmOverwrite)
+    else:
+        path, _f = QtWidgets.QFileDialog.getOpenFileName(parent, title, os.path.dirname(start), _("Reader's credentials (*.json)"))
+    if not path:
+        return False, ""
+    try:
+        if export:
+            return True, _("credentials exported to %1 — the file holds your passwords: keep it private", export_credentials(cfg, path))
+        import_credentials(cfg, path)
+        return True, _("credentials imported")
+    except (OSError, ValueError) as e:
+        return False, str(e)
+
 
 # ------------------------------------------------------------------------------------------
 # UI
@@ -702,6 +814,9 @@ class SetupDialog(QtWidgets.QDialog):
         self.error.setWordWrap(True)
         form.addRow(self.error)
         row = QtWidgets.QHBoxLayout()
+        self.cfg = cfg
+        for text, export in ((_("import credentials…"), False), (_("export credentials…"), True)):
+            b = QtWidgets.QPushButton(text); b.setObjectName("quiet"); b.clicked.connect(lambda _c=False, x=export: self.credentials(x)); row.addWidget(b)
         row.addStretch(1)
         cancel = QtWidgets.QPushButton(_("cancel"))
         cancel.clicked.connect(self.reject)
@@ -715,6 +830,14 @@ class SetupDialog(QtWidgets.QDialog):
         credits.setObjectName("dim")
         form.addRow(credits)
         self.resize(560, 340)
+
+    IMPORTED = 2
+
+    def credentials(self, export):
+        ok, message = credentials_dialog(self, export, self.cfg)
+        self.error.setText(message)
+        if ok and not export:
+            save_config(self.cfg); self.done(self.IMPORTED)
 
     def values(self):
         return {"url": self.url.text().strip(), "username": self.user.text().strip(), "password": self.password.text()}
@@ -840,6 +963,7 @@ class Main(QtWidgets.QMainWindow):
             QDialog QLineEdit {{ border: 1px solid {rule}; padding: 6px; font-size: {s}pt; }}
             QPushButton {{ background: {bg}; color: {fg}; border: 1px solid {fg}; padding: 6px 18px; font-size: {s}pt; }}
             QPushButton:default {{ background: {fg}; color: {bg}; }}
+            QPushButton#quiet {{ border: none; color: {dim}; padding: 6px 4px; }}
             QToolTip {{ background: {bg}; color: {fg}; border: 1px solid {rule}; }}
         """)
         self.big = QtGui.QFont()
@@ -883,7 +1007,10 @@ class Main(QtWidgets.QMainWindow):
 
     def setup(self):
         dlg = SetupDialog(self.cfg, self)
-        if dlg.exec_() != QtWidgets.QDialog.Accepted:
+        result = dlg.exec_()
+        if result == SetupDialog.IMPORTED:
+            self.status.setText(_("credentials imported")); self.connect_client(); return
+        if result != QtWidgets.QDialog.Accepted:
             if not self.cfg.get("url"):
                 self.status.setText(_("not connected — Ctrl+, to set up"))
             return
@@ -1108,6 +1235,7 @@ class Main(QtWidgets.QMainWindow):
 
 
 def main():
+    credentials_cli(sys.argv)
     app = QtWidgets.QApplication(sys.argv)
     app.setApplicationName("reader's tasks")
     app.setDesktopFileName(APP)

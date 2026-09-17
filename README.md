@@ -12,7 +12,7 @@ to tick, a line at the bottom to add. White on black or black on white. Nothing 
 Debian, Ubuntu, Pop!_OS:
 
 ```
-sudo apt install ./readers-tasks_1.4.0_all.deb
+sudo apt install ./readers-tasks_1.5.0_all.deb
 ```
 
 Arch, Manjaro:
@@ -23,6 +23,17 @@ cd readers-tasks/packaging && makepkg -si
 ```
 
 Anywhere else: `python3 readers_tasks.py` with PyQt5 and requests installed.
+
+## A new computer
+
+The setup dialog (Ctrl+,) › *export credentials…* writes the accounts (server, username, app password) into a JSON file. Reader's
+Calendar, Tasks and Notes can all write into the same file, each in its own section. On the new
+computer, *import credentials…* at the same place brings them back — or, before the first
+window, `readers-tasks --import-credentials readers-credentials.json` (and `--export-credentials FILE` the
+other way). The look (colours, text size, font) stays out of it.
+
+The file holds your passwords in clear and is written readable by you only: carry it on a USB key
+or in your own cloud folder, not by e-mail, and delete it once imported.
 
 ## Tasks.org Cloud
 
