@@ -91,8 +91,16 @@ jobs:
           cp -R "dist/Readers Tasks.app" dmg/
           ln -s /Applications dmg/Applications
           ARCH=$([ "${{ matrix.target }}" = "macos-intel" ] && echo intel || echo apple-silicon)
-          hdiutil create -volname "Readers Tasks" -srcfolder dmg -ov -format UDZO \
-            "out/readers-tasks_${VERSION}_macos_${ARCH}.dmg"
+          # "hdiutil: create failed - Resource busy" happens when something still holds the
+          # freshly signed bundle; waiting and asking again is enough.
+          made=
+          for try in 1 2 3; do
+            if hdiutil create -volname "Readers Tasks" -srcfolder dmg -ov -format UDZO \
+                 "out/readers-tasks_${VERSION}_macos_${ARCH}.dmg"; then made=yes; break; fi
+            echo "the folder was busy, waiting before try $((try + 1))"
+            sleep 15
+          done
+          [ -n "$made" ]
 
       - name: Does it start? (macOS)
         if: runner.os == 'macOS'
