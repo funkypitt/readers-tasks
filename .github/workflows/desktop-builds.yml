@@ -134,6 +134,50 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${GITHUB_REF_NAME}"
-          gh release view "$TAG" >/dev/null 2>&1 || \
-            gh release create "$TAG" --title "Reader's Tasks $VERSION" --notes "Reader's Tasks $VERSION"
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            # the .deb job may be creating it at this very moment; then the upload finds it
+            gh release create "$TAG" --title "Reader's Tasks $VERSION" --notes "Reader's Tasks $VERSION" || sleep 5
+          fi
+          gh release upload "$TAG" out/* --clobber
+
+  deb:
+    name: linux (.deb)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: The app's own version number
+        run: echo "VERSION=$(sed -n 's/^VERSION = "\(.*\)"/\1/p' readers_tasks.py)" >> "$GITHUB_ENV"
+
+      - name: Build the .deb
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq fakeroot xvfb
+          packaging/build-deb.sh
+          mkdir -p out
+          mv "packaging/readers-tasks_${VERSION}_all.deb" out/
+
+      - name: Does it install and start?
+        run: |
+          sudo apt-get install -y -qq ./out/readers-tasks_${VERSION}_all.deb
+          xvfb-run -a readers-tasks &
+          PID=$!
+          sleep 30
+          kill "$PID" && echo "it installed, started and was still running"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: readers-tasks-linux
+          path: out/*
+
+      - name: Attach to the release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            # the binaries' job may be creating it at this very moment
+            gh release create "$TAG" --title "Reader's Tasks $VERSION" --notes "Reader's Tasks $VERSION" || sleep 5
+          fi
           gh release upload "$TAG" out/* --clobber
