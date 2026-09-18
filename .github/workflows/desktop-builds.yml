@@ -1,0 +1,131 @@
+# Windows and macOS builds of Reader's Tasks.
+#
+# Runs on a v* tag (the binaries are attached to the release of that tag) and on demand from the
+# Actions tab (the binaries are then kept as artifacts for a few days). The .deb and the PKGBUILD
+# stay where they are: this workflow only adds the two desktops that cannot build themselves here.
+#
+# Neither binary is signed: Windows shows a SmartScreen warning, macOS says the app "cannot be
+# opened" until it is opened once with a right click. The README says so to the reader.
+
+name: Windows and macOS builds
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    # Intel Macs are a paid or vanishing runner label; if it fails, the other two still ship.
+    continue-on-error: ${{ matrix.target == 'macos-intel' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: windows
+          - os: macos-15
+            target: macos-apple-silicon
+          - os: macos-15-intel
+            target: macos-intel
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: The app's own version number
+        shell: bash
+        run: echo "VERSION=$(sed -n 's/^VERSION = "\(.*\)"/\1/p' readers_tasks.py)" >> "$GITHUB_ENV"
+
+      - name: Install PyQt5, requests and PyInstaller
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          pip install "PyQt5==5.15.11" requests pyinstaller
+
+      # ---------------------------------------------------------------- Windows: one .exe
+      - name: Build the .exe
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          pyinstaller --noconfirm --onefile --windowed \
+            --name "Readers Tasks" \
+            --icon packaging/readers-tasks.ico \
+            --add-data "packaging/readers-tasks.png;." \
+            readers_tasks.py
+          mkdir -p out
+          mv "dist/Readers Tasks.exe" "out/readers-tasks_${VERSION}_windows_x64.exe"
+
+      # ---------------------------------------------------------------- macOS: a .app in a .dmg
+      - name: Build the .icns
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p icon.iconset
+          for s in 16 32 128 256 512; do
+            sips -z $s $s packaging/readers-tasks.png --out "icon.iconset/icon_${s}x${s}.png"
+            sips -z $((s * 2)) $((s * 2)) packaging/readers-tasks.png --out "icon.iconset/icon_${s}x${s}@2x.png"
+          done
+          iconutil -c icns icon.iconset -o packaging/readers-tasks.icns
+
+      - name: Build the .app and the .dmg
+        if: runner.os == 'macOS'
+        run: |
+          pyinstaller --noconfirm --windowed \
+            --name "Readers Tasks" \
+            --icon packaging/readers-tasks.icns \
+            --osx-bundle-identifier ch.gallaz.readerstasks \
+            --add-data "packaging/readers-tasks.png:." \
+            readers_tasks.py
+          # Ad hoc signature: on Apple Silicon an unsigned binary does not start at all.
+          codesign --force --deep --sign - "dist/Readers Tasks.app"
+          codesign --verify --deep --strict "dist/Readers Tasks.app"
+          mkdir -p dmg out
+          cp -R "dist/Readers Tasks.app" dmg/
+          ln -s /Applications dmg/Applications
+          ARCH=$([ "${{ matrix.target }}" = "macos-intel" ] && echo intel || echo apple-silicon)
+          hdiutil create -volname "Readers Tasks" -srcfolder dmg -ov -format UDZO \
+            "out/readers-tasks_${VERSION}_macos_${ARCH}.dmg"
+
+      - name: Does it start? (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          # No screen on the runner: the app runs headless just long enough to prove it loads Qt.
+          QT_QPA_PLATFORM=offscreen "dist/Readers Tasks.app/Contents/MacOS/Readers Tasks" &
+          PID=$!
+          sleep 30
+          kill "$PID" && echo "it started and was still running"
+
+      - name: Does it start? (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem out\*.exe | Select-Object -First 1
+          $p = Start-Process -FilePath $exe.FullName -PassThru
+          Start-Sleep -Seconds 40
+          if ($p.HasExited) { throw "the app quit on its own (exit code $($p.ExitCode))" }
+          Stop-Process -Id $p.Id
+          Write-Host "it started and was still running"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: readers-tasks-${{ matrix.target }}
+          path: out/*
+
+      - name: Attach to the release
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          gh release view "$TAG" >/dev/null 2>&1 || \
+            gh release create "$TAG" --title "Reader's Tasks $VERSION" --notes "Reader's Tasks $VERSION"
+          gh release upload "$TAG" out/* --clobber

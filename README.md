@@ -12,7 +12,7 @@ to tick, a line at the bottom to add. White on black or black on white. Nothing 
 Debian, Ubuntu, Pop!_OS:
 
 ```
-sudo apt install ./readers-tasks_1.5.0_all.deb
+sudo apt install ./readers-tasks_1.6.0_all.deb
 ```
 
 Arch, Manjaro:
@@ -21,6 +21,18 @@ Arch, Manjaro:
 git clone https://github.com/funkypitt/readers-tasks
 cd readers-tasks/packaging && makepkg -si
 ```
+
+**Windows** — take the `.exe` from the
+[latest release](https://github.com/funkypitt/readers-tasks/releases/latest) and open it: one file,
+nothing to install, no Python needed. The app is not signed by a paid certificate, so Windows
+shows a blue "Windows protected your PC" panel the first time: *More info* › *Run anyway*.
+
+**macOS** — take the `.dmg` for your Mac (`apple-silicon` for an M1 and later, `intel` for an
+older one), open it and drag the app onto *Applications*. It is not signed by a paid Apple
+certificate either, so the first opening must be a **right click on the app › Open** › *Open*; a
+double click at that point says the app "cannot be opened" and offers nothing but the bin. Once
+opened that way it starts normally ever after. If macOS still refuses, in a Terminal:
+`xattr -dr com.apple.quarantine "/Applications/Readers Tasks.app"`.
 
 Anywhere else: `python3 readers_tasks.py` with PyQt5 and requests installed.
 
@@ -85,11 +97,20 @@ python3 copy_tasks.py \
 Tasks keep their UID, so a second run skips what is already there; nothing is deleted on
 the source. Add `--dry-run` to see the list first.
 
-## Build the .deb
+## Build
+
+The .deb, on the machine itself:
 
 ```
 packaging/build-deb.sh
 ```
+
+The Windows and macOS binaries are built by GitHub, since neither can be built here:
+`.github/workflows/desktop-builds.yml` runs PyInstaller on a Windows runner and on two macOS
+runners at every `v*` tag and attaches the `.exe` and the two `.dmg` to the release of that tag.
+*Actions* › *Windows and macOS builds* › *Run workflow* builds them without a tag, kept as
+artifacts. The icons come from `packaging/readers-tasks.png` (`.ico` beside it, `.icns` built on the
+runner).
 
 Single file, PyQt5 + requests, no CalDAV library: discovery, listing, adding and completing
 are four HTTP requests. MIT.

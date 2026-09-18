@@ -17,8 +17,21 @@ import requests
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 APP = "readers-tasks"
-VERSION = "1.5.0"
-CONFIG_DIR = os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), APP)
+VERSION = "1.6.0"
+
+
+def _config_dir():
+    """The settings folder, one place per desktop. Linux keeps the XDG folder it has always
+    used; Windows and macOS take the per-user folder of the system, the one place where a
+    password stays out of another account's reach."""
+    if sys.platform == "win32":
+        return os.path.join(os.environ.get("APPDATA") or os.path.expanduser("~"), "Readers Tasks")
+    if sys.platform == "darwin":
+        return os.path.expanduser("~/Library/Application Support/" + APP)
+    return os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), APP)
+
+
+CONFIG_DIR = _config_dir()
 CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
 SYNC_MINUTES = 5
 
@@ -253,7 +266,10 @@ def _lang():
         v = os.environ.get(var)
         if v:
             return v[:2].lower()
-    return "en"
+    try:                    # Windows, and macOS opened from the Finder: no LANG at all
+        return QtCore.QLocale.system().name()[:2].lower()
+    except Exception:
+        return "en"
 
 
 _LANG = _lang()
@@ -1240,11 +1256,22 @@ class Main(QtWidgets.QMainWindow):
         self.run(lambda: self.client.delete(task), lambda _: self.sync())
 
 
+def _icon():
+    """The window icon: beside the script, or inside the Windows and macOS build."""
+    here = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+    for name in (APP + ".png", os.path.join("packaging", APP + ".png")):
+        path = os.path.join(here, name)
+        if os.path.exists(path):
+            return QtGui.QIcon(path)
+    return QtGui.QIcon()
+
+
 def main():
     credentials_cli(sys.argv)
     app = QtWidgets.QApplication(sys.argv)
     app.setApplicationName("reader's tasks")
     app.setDesktopFileName(APP)
+    app.setWindowIcon(_icon())
     w = Main()
     w.show()
     sys.exit(app.exec_())
