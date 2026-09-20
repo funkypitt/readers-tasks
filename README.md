@@ -1,119 +1,36 @@
 # Reader's Tasks
 
-A black-and-white, text-only desktop client for CalDAV task lists: Tasks.org Cloud,
-Nextcloud, Radicale, or any server that stores VTODO. The desktop twin of the tasks tile
-in [Reader's Launcher](https://github.com/funkypitt/readers-launcher).
+A black-and-white, text-only desktop client for CalDAV task lists: Tasks.org Cloud, Nextcloud,
+Radicale, or any server that stores VTODO. One window: your lists on the left, the open tasks on
+the right, a box to tick, a line at the bottom to add. The desktop twin of the tasks tile in
+[Reader's Launcher](https://github.com/funkypitt/readers-launcher). No account with the app, only
+your own server.
 
-One window. Your lists on the left, the open tasks of the chosen list on the right, a box
-to tick, a line at the bottom to add. White on black or black on white. Nothing else.
+## Key points
+
+- Enter in the bottom line adds a task; click ☐ to complete; double-click to rename; right click to complete, rename or delete.
+- Drag a task to put the open tasks in your own order. The order is saved on the server, so the phone shows the same. Tasks never dragged come after, by due date then creation.
+- Completed tasks are hidden; Ctrl+D or the "show n done" line brings them back, dimmed, so one ticked by mistake can be reopened.
+- Right click on a list: move up, move down, hide it, show a hidden one.
+- Syncs every 5 minutes, and on F5 or Ctrl+R. Ctrl+T flips white on black / black on white; Ctrl+= and Ctrl+- change the text size.
+- Account: server, username and app password, asked at first run (Ctrl+, later), kept in `~/.config/readers-tasks/config.json`, readable by you only. Tasks.org Cloud shows them in its Android app: ⚙ › App settings › Tasks.org › *Generate new password*.
+- A new computer: *export credentials…* in the setup dialog writes a JSON file that Reader's Calendar, Tasks and Notes share; *import credentials…* reads it back. It holds passwords in clear: delete it once imported.
+- `copy_tasks.py` copies a list to another list or another server, without deleting anything on the source.
+- English, French, German, Spanish, Portuguese and Russian, following the system language.
+
+More detail: [docs/NOTES.md](docs/NOTES.md).
 
 ## Install
 
-Debian, Ubuntu, Pop!_OS:
-
-```
-sudo apt install ./readers-tasks_1.6.0_all.deb
-```
-
-Arch, Manjaro:
-
-```
-git clone https://github.com/funkypitt/readers-tasks
-cd readers-tasks/packaging && makepkg -si
-```
-
-**Windows** — take the `.exe` from the
-[latest release](https://github.com/funkypitt/readers-tasks/releases/latest) and open it: one file,
-nothing to install, no Python needed. The app is not signed by a paid certificate, so Windows
-shows a blue "Windows protected your PC" panel the first time: *More info* › *Run anyway*.
-
-**macOS** — take the `.dmg` for your Mac (`apple-silicon` for an M1 and later, `intel` for an
-older one), open it and drag the app onto *Applications*. It is not signed by a paid Apple
-certificate either, so the first opening must be a **right click on the app › Open** › *Open*; a
-double click at that point says the app "cannot be opened" and offers nothing but the bin. Once
-opened that way it starts normally ever after. If macOS still refuses, in a Terminal:
-`xattr -dr com.apple.quarantine "/Applications/Readers Tasks.app"`.
-
-Anywhere else: `python3 readers_tasks.py` with PyQt5 and requests installed.
-
-## A new computer
-
-The setup dialog (Ctrl+,) › *export credentials…* writes the accounts (server, username, app password) into a JSON file. Reader's
-Calendar, Tasks and Notes can all write into the same file, each in its own section. On the new
-computer, *import credentials…* at the same place brings them back — or, before the first
-window, `readers-tasks --import-credentials readers-credentials.json` (and `--export-credentials FILE` the
-other way). The look (colours, text size, font) stays out of it.
-
-The file holds your passwords in clear and is written readable by you only: carry it on a USB key
-or in your own cloud folder, not by e-mail, and delete it once imported.
-
-## Tasks.org Cloud
-
-In the Android app: ⚙ › App settings › Tasks.org › *Generate new password*. Copy the URL,
-username and app password shown there into the first-run dialog (Ctrl+, later). The
-password is stored in `~/.config/readers-tasks/config.json`, readable by you only.
-
-## Languages
-
-English, French, German, Spanish, Portuguese and Russian, following the system language
-(`LANG`).
-
-## Keys
-
-| Key | Effect |
-|---|---|
-| Enter in the bottom line | add the task to the current list |
-| click ☐ | complete |
-| double-click on a task | rename it |
-| drag a task up or down | put the open tasks in your own order (saved on the server as X-APPLE-SORT-ORDER, so the phone shows the same order) |
-| right click on a task | complete · rename · delete |
-| Ctrl+T | flip white on black / black on white |
-| Ctrl+= / Ctrl+- | larger / smaller text |
-| F5 or Ctrl+R | sync now (also every 5 minutes) |
-| Ctrl+N | jump to the new-task line |
-| Ctrl+D or the "show n done" line | show / hide completed tasks; click ☑ (or right click → reopen) to untick one |
-| right click on a list | move up · move down · hide this list · show a hidden list |
-| Ctrl+, or the ⚙ in the status line | server settings |
-| Ctrl+Q | quit |
-
-Open tasks follow the order you give them by dragging; tasks never dragged come after,
-by due date then creation. Completed tasks are hidden by default; the "show n done" line under the list brings them
-back, dimmed, so a task ticked by mistake can be reopened. Lists you hide, and the order
-you give them, are remembered in the config file. Tasks are ordered by due date, then by
-creation, like the launcher tile.
-
-## Moving lists between servers
-
-`copy_tasks.py` copies the tasks of one list into another, on the same server or not —
-for instance from Tasks.org Cloud to an Infomaniak or Nextcloud calendar:
-
-```
-python3 copy_tasks.py \
-    --from https://caldav.tasks.org/ USER APP_PASSWORD "Inbox" \
-    --to   https://sync.infomaniak.com AB12345 APP_PASSWORD "À faire" \
-    --include-completed
-```
-
-Tasks keep their UID, so a second run skips what is already there; nothing is deleted on
-the source. Add `--dry-run` to see the list first.
+- Debian, Ubuntu, Pop!_OS: add the [apt repository](https://funkypitt.github.io/apt-repo/), then `sudo apt install readers-tasks`. Or take the `.deb` from the [latest release](https://github.com/funkypitt/readers-tasks/releases/latest): `sudo apt install ./readers-tasks_*_all.deb`.
+- Arch, Manjaro: `git clone https://github.com/funkypitt/readers-tasks && cd readers-tasks/packaging && makepkg -si`.
+- Windows (`.exe`) and macOS (`.dmg`, `apple-silicon` or `intel`): from the latest release. They are unsigned: on Windows *More info* › *Run anyway*, on macOS right click on the app › *Open* the first time.
+- Anywhere else: `python3 readers_tasks.py` with PyQt5 and requests installed.
 
 ## Build
 
-The .deb, on the machine itself:
-
-```
-packaging/build-deb.sh
-```
-
-The Windows and macOS binaries are built by GitHub, since neither can be built here:
-`.github/workflows/desktop-builds.yml` runs PyInstaller on a Windows runner and on two macOS
-runners at every `v*` tag and attaches the `.exe` and the two `.dmg` to the release of that tag.
-*Actions* › *Windows and macOS builds* › *Run workflow* builds them without a tag, kept as
-artifacts. The icons come from `packaging/readers-tasks.png` (`.ico` beside it, `.icns` built on the
-runner).
-
-Single file, PyQt5 + requests, no CalDAV library: discovery, listing, adding and completing
-are four HTTP requests. MIT.
+`packaging/build-deb.sh` builds the .deb. The Windows and macOS binaries are built by GitHub Actions
+at every `v*` tag. Single file, PyQt5 + requests, no CalDAV library.
 
 ## Crédits / Credits
 
