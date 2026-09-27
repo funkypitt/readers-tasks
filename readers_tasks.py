@@ -17,7 +17,7 @@ import requests
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 APP = "readers-tasks"
-VERSION = "1.6.0"
+VERSION = "1.6.1"
 
 
 def _config_dir():
@@ -116,6 +116,14 @@ _TR = {
   "wrong username or app password": "identifiant ou mot de passe d'application incorrect",
   "no task list found at this address": "aucune liste de tâches à cette adresse",
   "CalDAV task lists. For Tasks.org Cloud: in the Android app,\n⚙ › App settings › Tasks.org › Generate new password, and copy\nthe URL, username and app password shown there.": "Listes de tâches CalDAV. Tasks.org Cloud : dans l'app Android,\n⚙ › Paramètres › Tasks.org › Générer un nouveau mot de passe, puis copier\nl'URL, l'identifiant et le mot de passe d'application affichés.",
+  "the server refused the request (HTTP %1)": "le serveur a refusé la demande (HTTP %1)",
+  "cannot use this file — %1": "impossible d'utiliser ce fichier — %1",
+  "the server did not answer in time": "le serveur n'a pas répondu à temps",
+  "cannot reach the server": "serveur injoignable",
+  "this server address is not valid": "cette adresse de serveur n'est pas valable",
+  "network error — %1": "erreur réseau — %1",
+  "the server sent an unreadable answer": "le serveur a envoyé une réponse illisible",
+  "error — %1": "erreur — %1",
   "Pierre Gallaz · developed with Claude Code": "Pierre Gallaz · développé avec Claude Code"
  },
  "de": {
@@ -151,6 +159,14 @@ _TR = {
   "wrong username or app password": "falscher Benutzername oder falsches App-Passwort",
   "no task list found at this address": "keine Aufgabenliste unter dieser Adresse",
   "CalDAV task lists. For Tasks.org Cloud: in the Android app,\n⚙ › App settings › Tasks.org › Generate new password, and copy\nthe URL, username and app password shown there.": "CalDAV-Aufgabenlisten. Tasks.org Cloud: in der Android-App\n⚙ › App-Einstellungen › Tasks.org › Neues Passwort erzeugen, dann URL,\nBenutzername und App-Passwort von dort kopieren.",
+  "the server refused the request (HTTP %1)": "der Server hat die Anfrage abgelehnt (HTTP %1)",
+  "cannot use this file — %1": "diese Datei lässt sich nicht verwenden — %1",
+  "the server did not answer in time": "der Server hat nicht rechtzeitig geantwortet",
+  "cannot reach the server": "Server nicht erreichbar",
+  "this server address is not valid": "diese Serveradresse ist ungültig",
+  "network error — %1": "Netzwerkfehler — %1",
+  "the server sent an unreadable answer": "der Server hat eine unlesbare Antwort geschickt",
+  "error — %1": "Fehler — %1",
   "Pierre Gallaz · developed with Claude Code": "Pierre Gallaz · entwickelt mit Claude Code"
  },
  "es": {
@@ -186,6 +202,14 @@ _TR = {
   "wrong username or app password": "usuario o contraseña de aplicación incorrectos",
   "no task list found at this address": "ninguna lista de tareas en esta dirección",
   "CalDAV task lists. For Tasks.org Cloud: in the Android app,\n⚙ › App settings › Tasks.org › Generate new password, and copy\nthe URL, username and app password shown there.": "Listas de tareas CalDAV. Tasks.org Cloud: en la app Android,\n⚙ › Ajustes › Tasks.org › Generar nueva contraseña, y copia\nla URL, el usuario y la contraseña de aplicación mostrados.",
+  "the server refused the request (HTTP %1)": "el servidor rechazó la solicitud (HTTP %1)",
+  "cannot use this file — %1": "no se puede usar este archivo — %1",
+  "the server did not answer in time": "el servidor no respondió a tiempo",
+  "cannot reach the server": "no se puede contactar con el servidor",
+  "this server address is not valid": "esta dirección de servidor no es válida",
+  "network error — %1": "error de red — %1",
+  "the server sent an unreadable answer": "el servidor envió una respuesta ilegible",
+  "error — %1": "error — %1",
   "Pierre Gallaz · developed with Claude Code": "Pierre Gallaz · desarrollado con Claude Code"
  },
  "pt": {
@@ -221,6 +245,14 @@ _TR = {
   "wrong username or app password": "utilizador ou palavra-passe de aplicação errados",
   "no task list found at this address": "nenhuma lista de tarefas neste endereço",
   "CalDAV task lists. For Tasks.org Cloud: in the Android app,\n⚙ › App settings › Tasks.org › Generate new password, and copy\nthe URL, username and app password shown there.": "Listas de tarefas CalDAV. Tasks.org Cloud: na app Android,\n⚙ › Definições › Tasks.org › Gerar nova palavra-passe, e copie\no URL, o utilizador e a palavra-passe de aplicação mostrados.",
+  "the server refused the request (HTTP %1)": "o servidor recusou o pedido (HTTP %1)",
+  "cannot use this file — %1": "não é possível usar este ficheiro — %1",
+  "the server did not answer in time": "o servidor não respondeu a tempo",
+  "cannot reach the server": "não é possível contactar o servidor",
+  "this server address is not valid": "este endereço de servidor não é válido",
+  "network error — %1": "erro de rede — %1",
+  "the server sent an unreadable answer": "o servidor enviou uma resposta ilegível",
+  "error — %1": "erro — %1",
   "Pierre Gallaz · developed with Claude Code": "Pierre Gallaz · desenvolvido com Claude Code"
  },
  "ru": {
@@ -256,6 +288,14 @@ _TR = {
   "wrong username or app password": "неверное имя пользователя или пароль приложения",
   "no task list found at this address": "по этому адресу нет списков задач",
   "CalDAV task lists. For Tasks.org Cloud: in the Android app,\n⚙ › App settings › Tasks.org › Generate new password, and copy\nthe URL, username and app password shown there.": "Списки задач CalDAV. Tasks.org Cloud: в приложении Android\n⚙ › Настройки › Tasks.org › Создать новый пароль, затем скопировать\nURL, имя пользователя и пароль приложения оттуда.",
+  "the server refused the request (HTTP %1)": "сервер отклонил запрос (HTTP %1)",
+  "cannot use this file — %1": "не удаётся использовать этот файл — %1",
+  "the server did not answer in time": "сервер не ответил вовремя",
+  "cannot reach the server": "сервер недоступен",
+  "this server address is not valid": "неверный адрес сервера",
+  "network error — %1": "ошибка сети — %1",
+  "the server sent an unreadable answer": "сервер прислал нечитаемый ответ",
+  "error — %1": "ошибка — %1",
   "Pierre Gallaz · developed with Claude Code": "Pierre Gallaz · разработано с Claude Code"
  }
 }
@@ -317,9 +357,11 @@ class Task:
             return _("tomorrow")
         if delta < 0:
             return _("%1 d late", -delta)
-        if delta < 7:
-            return self.due.strftime("%A").lower()
-        return self.due.strftime("%-d %b").lower()
+        # Day and month names in the interface language (strftime would follow the C locale).
+        loc = QtCore.QLocale(_LANG if _LANG in _TR else "en")
+        d = QtCore.QDate(self.due.year, self.due.month, self.due.day)
+        text = loc.dayName(d.dayOfWeek(), QtCore.QLocale.LongFormat) if delta < 7 else loc.toString(d, "d MMM")
+        return text if _LANG == "de" else text.lower()   # German keeps its capitalised nouns
 
     def completed_ics(self):
         """The same VTODO with the completion properties set."""
@@ -469,7 +511,7 @@ class CalDAV:
         if r.status_code == 401:
             raise CalDAVError(_("wrong username or app password"))
         if r.status_code >= 400:
-            raise CalDAVError(f"{method} {url}: HTTP {r.status_code}")
+            raise CalDAVError(_("the server refused the request (HTTP %1)", r.status_code))
         return r
 
     def _propfind(self, url, props, depth):
@@ -608,7 +650,7 @@ _CRED_TR = {
         "credentials exported to %1 — the file holds your passwords: keep it private": "Zugangsdaten nach %1 exportiert — die Datei enthält Ihre Passwörter: halten Sie sie privat",
         "credentials imported": "Zugangsdaten importiert", "server and login taken from %1": "Server und Anmeldung aus %1 übernommen", "not a Reader's credentials file": "keine Reader's-Zugangsdatendatei", "this file holds nothing for %1": "diese Datei enthält nichts für %1"},
  "es": {"import credentials…": "importar credenciales…", "export credentials…": "exportar credenciales…", "Reader's credentials (*.json)": "Credenciales Reader's (*.json)",
-        "credentials exported to %1 — the file holds your passwords: keep it private": "credenciales exportadas a %1 — el archivo contiene sus contraseñas: manténgalo privado",
+        "credentials exported to %1 — the file holds your passwords: keep it private": "credenciales exportadas a %1 — el archivo contiene tus contraseñas: mantenlo privado",
         "credentials imported": "credenciales importadas", "server and login taken from %1": "servidor y usuario tomados de %1", "not a Reader's credentials file": "no es un archivo de credenciales Reader's", "this file holds nothing for %1": "este archivo no contiene nada para %1"},
  "pt": {"import credentials…": "importar credenciais…", "export credentials…": "exportar credenciais…", "Reader's credentials (*.json)": "Credenciais Reader's (*.json)",
         "credentials exported to %1 — the file holds your passwords: keep it private": "credenciais exportadas para %1 — o ficheiro contém as suas palavras-passe: mantenha-o privado",
@@ -702,13 +744,34 @@ def credentials_dialog(parent, export, cfg):
         if export:
             return True, _("credentials exported to %1 — the file holds your passwords: keep it private", export_credentials(cfg, path))
         return True, import_credentials(cfg, path)
-    except (OSError, ValueError) as e:
+    except OSError as e:
+        return False, _("cannot use this file — %1", e.strerror or e)
+    except ValueError as e:
         return False, str(e)
 
 
 # ------------------------------------------------------------------------------------------
 # UI
 # ------------------------------------------------------------------------------------------
+
+def _error_text(e):
+    """One line for the status bar, in the interface language: our own errors are already
+    translated; a library's English message is kept only after a translated lead."""
+    if isinstance(e, CalDAVError):
+        return str(e)
+    if isinstance(e, requests.exceptions.Timeout):
+        return _("the server did not answer in time")
+    if isinstance(e, (requests.exceptions.MissingSchema, requests.exceptions.InvalidSchema,
+                      requests.exceptions.InvalidURL)):
+        return _("this server address is not valid")
+    if isinstance(e, requests.exceptions.ConnectionError):
+        return _("cannot reach the server")
+    if isinstance(e, requests.exceptions.RequestException):
+        return _("network error — %1", e)
+    if isinstance(e, ET.ParseError):
+        return _("the server sent an unreadable answer")
+    return _("error — %1", e)
+
 
 class Worker(QtCore.QObject):
     """Runs one CalDAV job off the UI thread."""
@@ -723,7 +786,7 @@ class Worker(QtCore.QObject):
         try:
             self.done.emit(self.fn())
         except Exception as e:  # network, auth, parse — all end up as one line of text
-            self.failed.emit(str(e))
+            self.failed.emit(_error_text(e))
 
 
 class TaskRow(QtWidgets.QWidget):
