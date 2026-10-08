@@ -17,7 +17,7 @@ import requests
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 APP = "readers-tasks"
-VERSION = "1.6.3"
+VERSION = "1.6.4"
 
 
 def _config_dir():
@@ -1095,8 +1095,10 @@ class Main(QtWidgets.QMainWindow):
         dim = "rgba(255,255,255,0.55)" if self.dark else "rgba(0,0,0,0.55)"
         rule = "rgba(255,255,255,0.25)" if self.dark else "rgba(0,0,0,0.25)"
         s = self.font_size
+        # the family goes in the style sheet: a font set on the application alone is thrown
+        # away by Qt when the first dialog is polished
         self.setStyleSheet(f"""
-            QMainWindow, QWidget {{ background: {bg}; color: {fg}; }}
+            QMainWindow, QWidget {{ background: {bg}; color: {fg}; font-family: "{SANS_FAMILY}"; }}
             QLabel#dim {{ color: {dim}; }}
             QListWidget#lists {{ background: {bg}; color: {fg}; border: none; border-right: 1px solid {rule};
                                  font-size: {s}pt; font-weight: 300; padding: 16px 0; outline: none; }}
@@ -1116,10 +1118,10 @@ class Main(QtWidgets.QMainWindow):
             QPushButton#quiet {{ border: none; color: {dim}; padding: 6px 4px; }}
             QToolTip {{ background: {bg}; color: {fg}; border: 1px solid {rule}; }}
         """)
-        self.big = QtGui.QFont()
+        self.big = QtGui.QFont(SANS_FAMILY)
         self.big.setPointSize(self.font_size + 3)
         self.big.setWeight(QtGui.QFont.Light)
-        self.small = QtGui.QFont()
+        self.small = QtGui.QFont(SANS_FAMILY)
         self.small.setPointSize(max(8, self.font_size - 3))
         self.render_tasks()
 
@@ -1394,9 +1396,45 @@ def _icon():
     return QtGui.QIcon()
 
 
+SANS_FAMILY = "sans-serif"   # "Roboto" once the bundled font is loaded (load_bundled_fonts)
+
+
+def bundled_fonts_dir():
+    """Where the fonts shipped with the app lie: next to the script (packaging/fonts in the
+    source tree, fonts/ once installed) or inside a PyInstaller bundle."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    for d in (os.path.join(getattr(sys, "_MEIPASS", ""), "fonts"), os.path.join(here, "fonts"), os.path.join(here, "packaging", "fonts")):
+        if d and os.path.isdir(d):
+            return d
+    return None
+
+
+def load_bundled_fonts():
+    """Roboto Light and Regular travel with the app, so that every computer draws the same
+    text instead of whatever sans-serif the system picks."""
+    global SANS_FAMILY
+    d = bundled_fonts_dir()
+    if not d:
+        return 0
+    n = 0
+    for name in sorted(os.listdir(d)):
+        if name.lower().endswith((".ttf", ".otf")) and QtGui.QFontDatabase.addApplicationFont(os.path.join(d, name)) >= 0:
+            n += 1
+    if n:
+        SANS_FAMILY = "Roboto"
+    return n
+
+
 def main():
     credentials_cli(sys.argv)
+    # Sizes in the layout are pixels and text sizes are points: without this, a scaled screen
+    # (125 %, 150 %, 200 %) grows the text and not the boxes around it.
+    if hasattr(QtCore.Qt, "HighDpiScaleFactorRoundingPolicy"):
+        QtGui.QGuiApplication.setHighDpiScaleFactorRoundingPolicy(QtCore.Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
+    QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
+    QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
     app = QtWidgets.QApplication(sys.argv)
+    load_bundled_fonts()
     app.setApplicationName("reader's tasks")
     app.setDesktopFileName(APP)
     app.setWindowIcon(_icon())

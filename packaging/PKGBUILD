@@ -1,7 +1,7 @@
 # Maintainer: funkypitt <pierregallaz@gmail.com>
 # Arch / Manjaro: cd packaging && makepkg -si
 pkgname=readers-tasks
-pkgver=1.6.3
+pkgver=1.6.4
 pkgrel=1
 pkgdesc="Black-and-white, text-only CalDAV task list (Tasks.org Cloud, Nextcloud…)"
 arch=('any')
@@ -14,6 +14,7 @@ sha256sums=('SKIP')
 package() {
   cd "$srcdir/$pkgname-$pkgver"
   install -Dm755 readers_tasks.py "$pkgdir/usr/lib/readers-tasks/readers_tasks.py"
+  for f in packaging/fonts/*; do install -Dm644 "$f" "$pkgdir/usr/lib/readers-tasks/fonts/$(basename "$f")"; done
   install -Dm755 /dev/stdin "$pkgdir/usr/bin/readers-tasks" <<'SH'
 #!/bin/sh
 exec python3 /usr/lib/readers-tasks/readers_tasks.py "$@"

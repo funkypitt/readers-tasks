@@ -60,6 +60,7 @@ jobs:
             --name "Readers Tasks" \
             --icon packaging/readers-tasks.ico \
             --add-data "packaging/readers-tasks.png;." \
+            --add-data "packaging/fonts;fonts" \
             readers_tasks.py
           mkdir -p out
           mv "dist/Readers Tasks.exe" "out/readers-tasks_${VERSION}_windows_x64.exe"
@@ -83,6 +84,7 @@ jobs:
             --icon packaging/readers-tasks.icns \
             --osx-bundle-identifier ch.gallaz.readerstasks \
             --add-data "packaging/readers-tasks.png:." \
+            --add-data "packaging/fonts:fonts" \
             readers_tasks.py
           # Ad hoc signature: on Apple Silicon an unsigned binary does not start at all.
           codesign --force --deep --sign - "dist/Readers Tasks.app"

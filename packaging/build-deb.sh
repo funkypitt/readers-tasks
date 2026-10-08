@@ -5,6 +5,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"; SRC="$HERE/.."
 VERSION=$(grep -oE '^VERSION = "[^"]+"' "$SRC/readers_tasks.py" | cut -d'"' -f2)
 ROOT="$HERE/deb-root"; rm -rf "$ROOT"
 install -Dm755 "$SRC/readers_tasks.py" "$ROOT/usr/lib/readers-tasks/readers_tasks.py"
+for f in "$HERE"/fonts/*; do install -Dm644 "$f" "$ROOT/usr/lib/readers-tasks/fonts/$(basename "$f")"; done
 install -Dm755 /dev/stdin "$ROOT/usr/bin/readers-tasks" <<'SH'
 #!/bin/sh
 exec python3 /usr/lib/readers-tasks/readers_tasks.py "$@"
