@@ -17,7 +17,7 @@ import requests
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 APP = "readers-tasks"
-VERSION = "1.6.5"
+VERSION = "1.6.6"
 
 
 def _config_dir():
@@ -1022,6 +1022,10 @@ class Main(QtWidgets.QMainWindow):
         self.lists_widget.setObjectName("lists")
         self.lists_widget.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.lists_widget.setFixedWidth(220)
+        # A name longer than the column goes on to a second line. Left to itself the list grew
+        # a horizontal scroll bar for it, which showed as an empty box at the foot of the column.
+        self.lists_widget.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.lists_widget.setWordWrap(True)
         self.lists_widget.currentRowChanged.connect(self.select_list)
         self.lists_widget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.lists_widget.customContextMenuRequested.connect(self.lists_menu)
@@ -1193,6 +1197,7 @@ class Main(QtWidgets.QMainWindow):
         self.lists_widget.clear()
         for name, _ in shown:
             self.lists_widget.addItem(name)
+            self.lists_widget.item(self.lists_widget.count() - 1).setToolTip(name)      # in full, should two lines not hold it
         row = next((i for i, (_, u) in enumerate(shown) if u == keep), 0)
         self.lists_widget.setCurrentRow(row)
         self.lists_widget.blockSignals(False)
