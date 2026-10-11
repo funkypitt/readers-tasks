@@ -17,7 +17,7 @@ import requests
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 APP = "readers-tasks"
-VERSION = "1.6.6"
+VERSION = "1.6.7"
 
 
 def _config_dir():
@@ -735,7 +735,7 @@ def credentials_cli(argv):
 def credentials_dialog(parent, export, cfg):
     """The file picker for export (merging) or import. Returns (ok, message)."""
     title = _("export credentials…") if export else _("import credentials…")
-    start = os.path.expanduser("~/readers-credentials.json")
+    start = os.path.expanduser("~/readers-tasks-credentials.json")
     if export:
         path, _f = QtWidgets.QFileDialog.getSaveFileName(parent, title, start, _("Reader's credentials (*.json)"), options=QtWidgets.QFileDialog.DontConfirmOverwrite)
     else:
