@@ -42,7 +42,7 @@ password is stored in `~/.config/readers-tasks/config.json`, readable by you onl
 | double-click on a task | rename it |
 | drag a task up or down | put the open tasks in your own order (saved on the server as X-APPLE-SORT-ORDER, so the phone shows the same order) |
 | right click on a task | complete · rename · delete |
-| Ctrl+T | flip white on black / black on white |
+| Ctrl+T | next colour theme (the two inks, then the Plume palettes: lavender, sage, nordic, terracotta, coquette, activist, sultry, nature); also the last entry of the lists' right-click menu |
 | Ctrl+= / Ctrl+- | larger / smaller text |
 | F5 or Ctrl+R | sync now (also every 5 minutes) |
 | Ctrl+N | jump to the new-task line |

@@ -17,7 +17,7 @@ import requests
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 APP = "readers-tasks"
-VERSION = "1.6.7"
+VERSION = "1.7.0"
 
 
 def _config_dir():
@@ -665,6 +665,84 @@ for _l, _d in _CRED_TR.items():
     _TR.setdefault(_l, {}).update(_d)
 
 
+# ------------------------------------------------------------------------------------------
+# Colour themes: the two inks (white on black, black on white), then the palettes of the Plume
+# keyboard in its order. A theme = background, text, accent, text on the accent: the accent fills
+# what used to be painted with the text colour (the selected list, the selected menu entry, the
+# default button); in the two inks the accent is the text colour, so they look as they always did.
+# Same names and values as the phone's apps.
+# ------------------------------------------------------------------------------------------
+
+PALETTES = [
+    ("DARK", "#000000", "#ffffff", "#ffffff", "#000000"),
+    ("LIGHT", "#ffffff", "#000000", "#000000", "#ffffff"),
+    ("LAVANDE", "#1f1a2e", "#f4efff", "#b8a4ff", "#1f1a2e"),
+    ("SAUGE", "#d9e0d4", "#1e2a21", "#4c7a5b", "#ffffff"),
+    ("NORDIQUE", "#2e3440", "#eceff4", "#88c0d0", "#2e3440"),
+    ("TERRACOTTA", "#e6d9cc", "#2b211b", "#c25e38", "#ffffff"),
+    ("COQUETTE", "#f3d9dc", "#4a1f2b", "#d2455e", "#ffffff"),
+    ("MILITANTE", "#f2eee4", "#121212", "#e8412e", "#ffffff"),
+    ("TORRIDE", "#1e0d13", "#f8e9e6", "#e02a50", "#fff4f2"),
+    ("NATURE", "#2b2a24", "#f2efe4", "#d19a4e", "#2b2a24"),
+]
+DEFAULT_THEME = "LIGHT"      # this program has always started black on white
+THEME_NAMES = {"DARK": "white on black", "LIGHT": "black on white", "LAVANDE": "lavender", "SAUGE": "sage",
+               "NORDIQUE": "nordic", "TERRACOTTA": "terracotta", "COQUETTE": "coquette", "MILITANTE": "activist",
+               "TORRIDE": "sultry", "NATURE": "nature"}
+
+_THEME_TR = {
+ "fr": {"white on black": "blanc sur noir", "black on white": "noir sur blanc", "lavender": "lavande", "sage": "sauge",
+        "nordic": "nordique", "terracotta": "terracotta", "coquette": "coquette", "activist": "militante", "sultry": "torride",
+        "nature": "nature", "colours: %1": "couleurs : %1"},
+ "de": {"white on black": "weiß auf schwarz", "black on white": "schwarz auf weiß", "lavender": "Lavendel", "sage": "Salbei",
+        "nordic": "nordisch", "terracotta": "Terrakotta", "coquette": "kokett", "activist": "kämpferisch", "sultry": "glühend",
+        "nature": "Natur", "colours: %1": "Farben: %1"},
+ "es": {"white on black": "blanco sobre negro", "black on white": "negro sobre blanco", "lavender": "lavanda", "sage": "salvia",
+        "nordic": "nórdico", "terracotta": "terracota", "coquette": "coqueta", "activist": "militante", "sultry": "tórrido",
+        "nature": "naturaleza", "colours: %1": "colores: %1"},
+ "pt": {"white on black": "branco sobre preto", "black on white": "preto sobre branco", "lavender": "lavanda", "sage": "sálvia",
+        "nordic": "nórdico", "terracotta": "terracota", "coquette": "coquete", "activist": "militante", "sultry": "tórrido",
+        "nature": "natureza", "colours: %1": "cores: %1"},
+ "ru": {"white on black": "белым по чёрному", "black on white": "чёрным по белому", "lavender": "лаванда", "sage": "шалфей",
+        "nordic": "северный", "terracotta": "терракота", "coquette": "кокетка", "activist": "активистка", "sultry": "знойный",
+        "nature": "природа", "colours: %1": "цвета: %1"},
+}
+for _l, _d in _THEME_TR.items():
+    _TR.setdefault(_l, {}).update(_d)
+
+
+def palette(key):
+    """(key, bg, fg, accent, on_accent) of a theme; an unknown name gives the default."""
+    return next((p for p in PALETTES if p[0] == key), next(p for p in PALETTES if p[0] == DEFAULT_THEME))
+
+
+def next_theme(key):
+    """The theme after this one, round and round: the inks first, then the palettes."""
+    keys = [p[0] for p in PALETTES]
+    return keys[(keys.index(palette(key)[0]) + 1) % len(keys)]
+
+
+def theme_name(key):
+    return _(THEME_NAMES[palette(key)[0]])
+
+
+def theme_of(cfg):
+    """The theme a config asks for. A config from before the themes only has `dark`: it keeps
+    meaning white on black or black on white."""
+    key = cfg.get("theme")
+    if key in THEME_NAMES:
+        return key
+    if "dark" in cfg:
+        return "DARK" if cfg.get("dark") else "LIGHT"
+    return DEFAULT_THEME
+
+
+def _alpha(hex_colour, alpha):
+    """rgba(...) of a #rrggbb colour at an opacity, for the style sheet."""
+    r, g, b = (int(hex_colour[i:i + 2], 16) for i in (1, 3, 5))
+    return f"rgba({r},{g},{b},{alpha})"
+
+
 def export_credentials(cfg, path):
     """Write this app's accounts into the file at path (created, or merged into an existing
     credentials file)."""
@@ -1009,7 +1087,7 @@ class Main(QtWidgets.QMainWindow):
         self.resize(760, 900)
 
         self.font_size = int(self.cfg.get("font_size", 15))
-        self.dark = bool(self.cfg.get("dark", False))
+        self.theme = theme_of(self.cfg)
 
         central = QtWidgets.QWidget()
         self.setCentralWidget(central)
@@ -1097,9 +1175,8 @@ class Main(QtWidgets.QMainWindow):
     # ---- look ------------------------------------------------------------------------
 
     def apply_style(self):
-        bg, fg = ("#000000", "#ffffff") if self.dark else ("#ffffff", "#000000")
-        dim = "rgba(255,255,255,0.55)" if self.dark else "rgba(0,0,0,0.55)"
-        rule = "rgba(255,255,255,0.25)" if self.dark else "rgba(0,0,0,0.25)"
+        _key, bg, fg, accent, on_accent = palette(self.theme)
+        dim, rule = _alpha(fg, 0.55), _alpha(fg, 0.25)     # dims, rules and the scroll bar stay the text colour
         s = self.font_size
         # the family goes in the style sheet: a font set on the application alone is thrown
         # away by Qt when the first dialog is polished
@@ -1109,7 +1186,7 @@ class Main(QtWidgets.QMainWindow):
             QListWidget#lists {{ background: {bg}; color: {fg}; border: none; border-right: 1px solid {rule};
                                  font-size: {s}pt; font-weight: 300; padding: 16px 0; outline: none; }}
             QListWidget#lists::item {{ padding: 10px 20px; border: none; }}
-            QListWidget#lists::item:selected {{ background: {fg}; color: {bg}; }}
+            QListWidget#lists::item:selected {{ background: {accent}; color: {on_accent}; }}
             QLineEdit {{ background: {bg}; color: {fg}; border: none; border-top: 1px solid {rule};
                          padding: 12px 0; font-size: {s + 2}pt; font-weight: 300; }}
             QScrollArea, QScrollArea > QWidget > QWidget {{ background: {bg}; }}
@@ -1117,10 +1194,10 @@ class Main(QtWidgets.QMainWindow):
             QScrollBar::handle:vertical {{ background: {rule}; min-height: 24px; }}
             QScrollBar::add-line, QScrollBar::sub-line {{ height: 0; }}
             QMenu {{ background: {bg}; color: {fg}; border: 1px solid {rule}; font-size: {s}pt; }}
-            QMenu::item:selected {{ background: {fg}; color: {bg}; }}
+            QMenu::item:selected {{ background: {accent}; color: {on_accent}; }}
             QDialog QLineEdit {{ border: 1px solid {rule}; padding: 6px; font-size: {s}pt; }}
             QPushButton {{ background: {bg}; color: {fg}; border: 1px solid {fg}; padding: 6px 18px; font-size: {s}pt; }}
-            QPushButton:default {{ background: {fg}; color: {bg}; }}
+            QPushButton:default {{ background: {accent}; color: {on_accent}; border-color: {accent}; }}
             QPushButton#quiet {{ border: none; color: {dim}; padding: 6px 4px; }}
             QToolTip {{ background: {bg}; color: {fg}; border: 1px solid {rule}; }}
         """)
@@ -1132,8 +1209,11 @@ class Main(QtWidgets.QMainWindow):
         self.render_tasks()
 
     def toggle_theme(self):
-        self.dark = not self.dark
-        self.cfg["dark"] = self.dark
+        """Ctrl+T and the menu entry: the next theme of the cycle. `dark` is still written, so a
+        config read by an older version of the program keeps the right ink."""
+        self.theme = next_theme(self.theme)
+        self.cfg["theme"] = self.theme
+        self.cfg["dark"] = self.theme == "DARK"
         save_config(self.cfg)
         self.apply_style()
 
@@ -1225,6 +1305,9 @@ class Main(QtWidgets.QMainWindow):
             sub = m.addMenu(_("show a hidden list"))
             for n, u in hidden:
                 sub.addAction(n, lambda u=u: self.unhide_list(u))
+        if not m.isEmpty():
+            m.addSeparator()
+        m.addAction(_("colours: %1", theme_name(next_theme(self.theme))), self.toggle_theme)
         m.exec_(self.lists_widget.mapToGlobal(pos))
 
     def move_list(self, url, delta):
