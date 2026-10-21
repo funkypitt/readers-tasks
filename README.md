@@ -12,7 +12,7 @@ your own server.
 - Drag a task to put the open tasks in your own order. The order is saved on the server, so the phone shows the same. Tasks never dragged come after, by due date then creation.
 - Completed tasks are hidden; Ctrl+D or the "show n done" line brings them back, dimmed, so one ticked by mistake can be reopened.
 - Right click on a list: move up, move down, hide it, show a hidden one.
-- Syncs every 5 minutes, and on F5 or Ctrl+R. Ctrl+T (or the last entry of the lists' right-click menu) moves to the next colour theme: black on white, then lavender, sage, nordic, terracotta, coquette, activist, sultry, nature, white on black, and round again; Ctrl+= and Ctrl+- change the text size.
+- Syncs every 5 minutes, and on F5 or Ctrl+R. Ctrl+T (or the last entry of the lists' right-click menu) moves to the next colour theme: black on white, then lavender, sage, nordic, terracotta, coquette, activist, sultry, nature, white on black, and round again (with a colour theme the lists, rows, menus and buttons are rounded cards; the two inks stay text on the page); Ctrl+= and Ctrl+- change the text size.
 - Account: server, username and app password, asked at first run (Ctrl+, later), kept in `~/.config/readers-tasks/config.json`, readable by you only. Tasks.org Cloud shows them in its Android app: ⚙ › App settings › Tasks.org › *Generate new password*.
 - A new computer: *export credentials…* in the setup dialog writes a JSON file that Reader's Calendar, Tasks and Notes share; *import credentials…* reads it back. It holds passwords in clear: delete it once imported.
 - `copy_tasks.py` copies a list to another list or another server, without deleting anything on the source.

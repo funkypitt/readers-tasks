@@ -10,6 +10,7 @@ import sys
 import uuid
 import threading
 import xml.etree.ElementTree as ET
+from collections import namedtuple
 from datetime import datetime, timezone, date
 from urllib.parse import urljoin, urlparse
 
@@ -17,7 +18,7 @@ import requests
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 APP = "readers-tasks"
-VERSION = "1.7.0"
+VERSION = "1.8.0"
 
 
 def _config_dir():
@@ -670,20 +671,25 @@ for _l, _d in _CRED_TR.items():
 # keyboard in its order. A theme = background, text, accent, text on the accent: the accent fills
 # what used to be painted with the text colour (the selected list, the selected menu entry, the
 # default button); in the two inks the accent is the text colour, so they look as they always did.
+# A palette also has tiles: whatever can be clicked (a list entry, a task row, a button, a line
+# edit, a menu) is a rounded card in the palette's key colour (`tile`) on its surface (`bg`), the
+# pointer over it shows the press colour; what only reads stays on the surface. The two inks have
+# no tiles (`tiles` is False, tile and press are the background): text on the page, as always.
 # Same names and values as the phone's apps.
 # ------------------------------------------------------------------------------------------
 
+Palette = namedtuple("Palette", "key bg fg accent on_accent tile tile2 press tiles")
 PALETTES = [
-    ("DARK", "#000000", "#ffffff", "#ffffff", "#000000"),
-    ("LIGHT", "#ffffff", "#000000", "#000000", "#ffffff"),
-    ("LAVANDE", "#1f1a2e", "#f4efff", "#b8a4ff", "#1f1a2e"),
-    ("SAUGE", "#d9e0d4", "#1e2a21", "#4c7a5b", "#ffffff"),
-    ("NORDIQUE", "#2e3440", "#eceff4", "#88c0d0", "#2e3440"),
-    ("TERRACOTTA", "#e6d9cc", "#2b211b", "#c25e38", "#ffffff"),
-    ("COQUETTE", "#f3d9dc", "#4a1f2b", "#d2455e", "#ffffff"),
-    ("MILITANTE", "#f2eee4", "#121212", "#e8412e", "#ffffff"),
-    ("TORRIDE", "#1e0d13", "#f8e9e6", "#e02a50", "#fff4f2"),
-    ("NATURE", "#2b2a24", "#f2efe4", "#d19a4e", "#2b2a24"),
+    Palette("DARK", "#000000", "#ffffff", "#ffffff", "#000000", "#000000", "#000000", "#000000", False),
+    Palette("LIGHT", "#ffffff", "#000000", "#000000", "#ffffff", "#ffffff", "#ffffff", "#ffffff", False),
+    Palette("LAVANDE", "#1f1a2e", "#f4efff", "#b8a4ff", "#1f1a2e", "#3b3352", "#2b2540", "#5a4f78", True),
+    Palette("SAUGE", "#d9e0d4", "#1e2a21", "#4c7a5b", "#ffffff", "#f7f9f4", "#b5c2b2", "#b5c2b2", True),
+    Palette("NORDIQUE", "#2e3440", "#eceff4", "#88c0d0", "#2e3440", "#3b4252", "#353b4a", "#4c566a", True),
+    Palette("TERRACOTTA", "#e6d9cc", "#2b211b", "#c25e38", "#ffffff", "#fcf7f1", "#c8b6a5", "#c8b6a5", True),
+    Palette("COQUETTE", "#f3d9dc", "#4a1f2b", "#d2455e", "#ffffff", "#fff7f5", "#e7bfc6", "#e7bfc6", True),
+    Palette("MILITANTE", "#f2eee4", "#121212", "#e8412e", "#ffffff", "#ffffff", "#d8d3c6", "#d8d3c6", True),
+    Palette("TORRIDE", "#1e0d13", "#f8e9e6", "#e02a50", "#fff4f2", "#561a2c", "#34121d", "#7a2a42", True),
+    Palette("NATURE", "#2b2a24", "#f2efe4", "#d19a4e", "#2b2a24", "#3a4733", "#2f3a2b", "#566650", True),
 ]
 DEFAULT_THEME = "LIGHT"      # this program has always started black on white
 THEME_NAMES = {"DARK": "white on black", "LIGHT": "black on white", "LAVANDE": "lavender", "SAUGE": "sage",
@@ -712,7 +718,8 @@ for _l, _d in _THEME_TR.items():
 
 
 def palette(key):
-    """(key, bg, fg, accent, on_accent) of a theme; an unknown name gives the default."""
+    """The Palette (key, bg, fg, accent, on_accent, tile, tile2, press, tiles) of a theme; an unknown
+    name gives the default."""
     return next((p for p in PALETTES if p[0] == key), next(p for p in PALETTES if p[0] == DEFAULT_THEME))
 
 
@@ -869,7 +876,10 @@ class Worker(QtCore.QObject):
             self.failed.emit(_error_text(e))
 
 
-class TaskRow(QtWidgets.QWidget):
+class TaskRow(QtWidgets.QFrame):
+    """One task: its box, its title, its due date. With tiles (a colour palette) the row is a rounded
+    card named `tile`, styled by the window's sheet, and its text keeps the page's inset; in the two
+    inks it is text on the page, as always."""
     completed = QtCore.pyqtSignal(object)
     reopened = QtCore.pyqtSignal(object)
     deleted = QtCore.pyqtSignal(object)
@@ -877,12 +887,14 @@ class TaskRow(QtWidgets.QWidget):
     drag_moved = QtCore.pyqtSignal(object, int)   # (task, global y)
     drag_ended = QtCore.pyqtSignal(object)
 
-    def __init__(self, task, big, small, done=False, parent=None):
+    def __init__(self, task, big, small, done=False, parent=None, tiles=False):
         super().__init__(parent)
         self.task = task
         self.done = done
+        if tiles:
+            self.setObjectName("tile")
         lay = QtWidgets.QHBoxLayout(self)
-        lay.setContentsMargins(0, 8, 0, 8)
+        lay.setContentsMargins(TILE_INSET if tiles else 0, 8, TILE_INSET if tiles else 0, 8)
         lay.setSpacing(18)
         self.box = QtWidgets.QLabel("☑" if done else "☐")
         self.box.setFont(big)
@@ -955,6 +967,11 @@ class TaskRow(QtWidgets.QWidget):
         m.addAction(_("rename"), lambda: self.renamed.emit(self.task))
         m.addAction(_("delete"), lambda: self.deleted.emit(self.task))
         m.exec_(self.mapToGlobal(pos))
+
+
+# With tiles the tasks column loses TILE_INSET on each side and the cards take it back as inner
+# padding, so the text stays where the inks put it.
+TILE_INSET = 12
 
 
 def scrolling_page(window):
@@ -1114,6 +1131,7 @@ class Main(QtWidgets.QMainWindow):
         right.setContentsMargins(32, 24, 32, 16)
         right.setSpacing(0)
         outer.addLayout(right, 1)
+        self.right = right
         self.scroll = QtWidgets.QScrollArea()
         self.scroll.setWidgetResizable(True)
         self.scroll.setFrameShape(QtWidgets.QFrame.NoFrame)
@@ -1139,6 +1157,7 @@ class Main(QtWidgets.QMainWindow):
         right.addWidget(self.entry)
         bottom = QtWidgets.QHBoxLayout()
         bottom.setContentsMargins(0, 0, 0, 0)
+        self.bottom = bottom
         self.status = QtWidgets.QLabel("")
         self.status.setObjectName("dim")
         bottom.addWidget(self.status, 1)
@@ -1175,24 +1194,47 @@ class Main(QtWidgets.QMainWindow):
     # ---- look ------------------------------------------------------------------------
 
     def apply_style(self):
-        _key, bg, fg, accent, on_accent = palette(self.theme)
+        p = palette(self.theme)
+        bg, fg, accent, on_accent, tile, press = p.bg, p.fg, p.accent, p.on_accent, p.tile, p.press
+        self.tiles = p.tiles
         dim, rule = _alpha(fg, 0.55), _alpha(fg, 0.25)     # dims, rules and the scroll bar stay the text colour
         s = self.font_size
-        # the family goes in the style sheet: a font set on the application alone is thrown
-        # away by Qt when the first dialog is polished
-        self.setStyleSheet(f"""
-            QMainWindow, QWidget {{ background: {bg}; color: {fg}; font-family: "{SANS_FAMILY}"; }}
-            QLabel#dim {{ color: {dim}; }}
+        if p.tiles:
+            # a colour palette: the list entries, the task rows, the line edits, the buttons and the
+            # menus are rounded cards in the key colour on the surface, rows set apart by space
+            # instead of rules, the pointer over a card showing the press colour; the selected list,
+            # the selected menu entry and the default button keep the accent fill
+            look = f"""
+            QListWidget#lists {{ background: {bg}; color: {fg}; border: none;
+                                 font-size: {s}pt; font-weight: 300; padding: 16px 0; outline: none; }}
+            QListWidget#lists::item {{ background: {tile}; border: none; border-radius: 12px; margin: 3px 8px; padding: 8px 12px; }}
+            QListWidget#lists::item:hover {{ background: {press}; }}
+            QListWidget#lists::item:selected {{ background: {accent}; color: {on_accent}; }}
+            QFrame#tile {{ background: {tile}; border: none; border-radius: 12px; }}
+            QFrame#tile:hover {{ background: {press}; }}
+            QFrame#tile QLabel {{ background: transparent; }}
+            QLineEdit {{ background: {tile}; color: {fg}; border: none; border-radius: 10px;
+                         padding: 12px {TILE_INSET}px; font-size: {s + 2}pt; font-weight: 300; }}
+            QMenu {{ background: {tile}; color: {fg}; border: none; padding: 6px; font-size: {s}pt; }}
+            QMenu::item {{ padding: 6px 28px 6px 12px; border-radius: 8px; }}
+            QMenu::item:selected {{ background: {accent}; color: {on_accent}; }}
+            QMenu::separator {{ height: 6px; background: transparent; }}
+            QDialog QLineEdit {{ border: none; border-radius: 8px; padding: 8px 10px; font-size: {s}pt; }}
+            QPushButton {{ background: {tile}; color: {fg}; border: none; border-radius: 10px; padding: 8px 18px; font-size: {s}pt; }}
+            QPushButton:hover {{ background: {press}; }}
+            QPushButton:default {{ background: {accent}; color: {on_accent}; }}
+            QPushButton#quiet {{ background: transparent; color: {dim}; padding: 8px 4px; }}
+            QPushButton#quiet:hover {{ background: {press}; }}
+            QToolTip {{ background: {tile}; color: {fg}; border: none; padding: 4px 8px; }}
+            """
+        else:
+            look = f"""
             QListWidget#lists {{ background: {bg}; color: {fg}; border: none; border-right: 1px solid {rule};
                                  font-size: {s}pt; font-weight: 300; padding: 16px 0; outline: none; }}
             QListWidget#lists::item {{ padding: 10px 20px; border: none; }}
             QListWidget#lists::item:selected {{ background: {accent}; color: {on_accent}; }}
             QLineEdit {{ background: {bg}; color: {fg}; border: none; border-top: 1px solid {rule};
                          padding: 12px 0; font-size: {s + 2}pt; font-weight: 300; }}
-            QScrollArea, QScrollArea > QWidget > QWidget {{ background: {bg}; }}
-            QScrollBar:vertical {{ background: {bg}; width: 6px; }}
-            QScrollBar::handle:vertical {{ background: {rule}; min-height: 24px; }}
-            QScrollBar::add-line, QScrollBar::sub-line {{ height: 0; }}
             QMenu {{ background: {bg}; color: {fg}; border: 1px solid {rule}; font-size: {s}pt; }}
             QMenu::item:selected {{ background: {accent}; color: {on_accent}; }}
             QDialog QLineEdit {{ border: 1px solid {rule}; padding: 6px; font-size: {s}pt; }}
@@ -1200,7 +1242,25 @@ class Main(QtWidgets.QMainWindow):
             QPushButton:default {{ background: {accent}; color: {on_accent}; border-color: {accent}; }}
             QPushButton#quiet {{ border: none; color: {dim}; padding: 6px 4px; }}
             QToolTip {{ background: {bg}; color: {fg}; border: 1px solid {rule}; }}
+            """
+        # the family goes in the style sheet: a font set on the application alone is thrown
+        # away by Qt when the first dialog is polished
+        self.setStyleSheet(f"""
+            QMainWindow, QWidget {{ background: {bg}; color: {fg}; font-family: "{SANS_FAMILY}"; }}
+            QLabel#dim {{ color: {dim}; }}
+            {look}
+            QScrollArea, QScrollArea > QWidget > QWidget {{ background: {bg}; }}
+            QScrollBar:vertical {{ background: {bg}; width: 6px; }}
+            QScrollBar::handle:vertical {{ background: {rule}; min-height: 24px; }}
+            QScrollBar::add-line, QScrollBar::sub-line {{ height: 0; }}
         """)
+        # with tiles the column gives up TILE_INSET on each side, the cards take it back inside, and
+        # what stays on the surface (the done line, the status, the gear) keeps the same inset
+        inset = TILE_INSET if p.tiles else 0
+        self.right.setContentsMargins(32 - inset, 24, 32 - inset, 16)
+        self.rows.setSpacing(6 if p.tiles else 0)
+        self.done_toggle.setContentsMargins(inset, 6 if p.tiles else 0, inset, 0)
+        self.bottom.setContentsMargins(inset, 0, inset, 0)
         self.big = QtGui.QFont(SANS_FAMILY)
         self.big.setPointSize(self.font_size + 3)
         self.big.setWeight(QtGui.QFont.Light)
@@ -1369,7 +1429,7 @@ class Main(QtWidgets.QMainWindow):
         i = 0
         self.open_rows = []
         for t in self.tasks:
-            row = TaskRow(t, self.big, self.small)
+            row = TaskRow(t, self.big, self.small, tiles=self.tiles)
             row.completed.connect(self.complete_task)
             row.renamed.connect(self.rename_task)
             row.deleted.connect(self.delete_task)
@@ -1381,10 +1441,11 @@ class Main(QtWidgets.QMainWindow):
             empty = QtWidgets.QLabel(_("no open task"))
             empty.setObjectName("dim")
             empty.setFont(self.big)
+            empty.setContentsMargins(TILE_INSET if self.tiles else 0, 0, TILE_INSET if self.tiles else 0, 0)
             self.rows.insertWidget(i, empty); i += 1
         if self.show_done:
             for t in self.done_tasks:
-                row = TaskRow(t, self.big, self.small, done=True)
+                row = TaskRow(t, self.big, self.small, done=True, tiles=self.tiles)
                 row.reopened.connect(self.reopen_task)
                 row.renamed.connect(self.rename_task)
                 row.deleted.connect(self.delete_task)
