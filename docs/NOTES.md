@@ -11,10 +11,15 @@ shows a blue "Windows protected your PC" panel the first time: *More info* › *
 
 **macOS** — take the `.dmg` for your Mac (`apple-silicon` for an M1 and later, `intel` for an
 older one), open it and drag the app onto *Applications*. It is not signed by a paid Apple
-certificate either, so the first opening must be a **right click on the app › Open** › *Open*; a
-double click at that point says the app "cannot be opened" and offers nothing but the bin. Once
-opened that way it starts normally ever after. If macOS still refuses, in a Terminal:
+certificate either, so the first double click is refused ("cannot be opened", or "Apple could not
+verify…"): close that message, then System Settings › **Privacy & Security**, at the bottom,
+*Open Anyway*, and confirm (macOS 15 and later). On macOS 14 a **right click on the app › Open** ›
+*Open* does it instead. Once opened that way it starts normally ever after. Or, in a Terminal:
 `xattr -dr com.apple.quarantine "/Applications/Readers Tasks.app"`.
+
+The interface follows the first language of System Settings › General › Language & Region, and
+the settings are ⌘, there. HTTPS is checked against the Mac's own certificates (the Keychain): a
+server with a private or company certificate the Mac trusts is trusted by the app too.
 
 ## A new computer
 
@@ -31,7 +36,8 @@ or in your own cloud folder, not by e-mail, and delete it once imported.
 
 In the Android app: ⚙ › App settings › Tasks.org › *Generate new password*. Copy the URL,
 username and app password shown there into the first-run dialog (Ctrl+, later). The
-password is stored in `~/.config/readers-tasks/config.json`, readable by you only.
+password is stored in `~/.config/readers-tasks/config.json` (macOS: `~/Library/Application
+Support/readers-tasks/config.json`; Windows: `%APPDATA%\Readers Tasks\config.json`), readable by you only.
 
 ## Keys
 
@@ -89,6 +95,19 @@ runner).
 
 Single file, PyQt5 + requests, no CalDAV library: discovery, listing, adding and completing
 are four HTTP requests. MIT.
+
+## 1.8.1 (2026-11-14): the macOS build, seen from a fresh Mac
+
+A certificate the app did not trust was reported as "cannot reach the server": requests' `SSLError`
+is a `ConnectionError`, and `_error_text` asked for the second first. It now says "the server's
+certificate is not trusted", with OpenSSL's reason. And the frozen app only knew certifi's list,
+where Debian's requests reads the system's: a server with a home CA that worked on Linux failed
+on the Mac. `truststore`, when installed (the Windows and macOS builds carry it), makes `ssl` ask
+the system — the Keychain, the Windows store — before any session exists; without it nothing
+changes. Opened from the Finder, the app has no LANG and took `QLocale.system().name()`, which on
+macOS is the region: it now takes the first of `uiLanguages()`. The shortcut hints read ⌘, there.
+The Info.plist said 0.0.0: `packaging/macos-info.py` writes the version and the oldest macOS the
+bundle starts on, the highest `minos` of its Mach-O files.
 
 ## 1.6.3 (2026-10-05): the setup window fitted itself without end
 

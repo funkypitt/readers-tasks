@@ -18,7 +18,7 @@ import requests
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 APP = "readers-tasks"
-VERSION = "1.8.0"
+VERSION = "1.8.1"
 
 
 def _config_dir():
@@ -121,6 +121,7 @@ _TR = {
   "cannot use this file — %1": "impossible d'utiliser ce fichier — %1",
   "the server did not answer in time": "le serveur n'a pas répondu à temps",
   "cannot reach the server": "serveur injoignable",
+  "the server's certificate is not trusted — %1": "le certificat du serveur n'est pas reconnu — %1",
   "this server address is not valid": "cette adresse de serveur n'est pas valable",
   "network error — %1": "erreur réseau — %1",
   "the server sent an unreadable answer": "le serveur a envoyé une réponse illisible",
@@ -164,6 +165,7 @@ _TR = {
   "cannot use this file — %1": "diese Datei lässt sich nicht verwenden — %1",
   "the server did not answer in time": "der Server hat nicht rechtzeitig geantwortet",
   "cannot reach the server": "Server nicht erreichbar",
+  "the server's certificate is not trusted — %1": "dem Zertifikat des Servers wird nicht vertraut — %1",
   "this server address is not valid": "diese Serveradresse ist ungültig",
   "network error — %1": "Netzwerkfehler — %1",
   "the server sent an unreadable answer": "der Server hat eine unlesbare Antwort geschickt",
@@ -207,6 +209,7 @@ _TR = {
   "cannot use this file — %1": "no se puede usar este archivo — %1",
   "the server did not answer in time": "el servidor no respondió a tiempo",
   "cannot reach the server": "no se puede contactar con el servidor",
+  "the server's certificate is not trusted — %1": "el certificado del servidor no es de confianza — %1",
   "this server address is not valid": "esta dirección de servidor no es válida",
   "network error — %1": "error de red — %1",
   "the server sent an unreadable answer": "el servidor envió una respuesta ilegible",
@@ -250,6 +253,7 @@ _TR = {
   "cannot use this file — %1": "não é possível usar este ficheiro — %1",
   "the server did not answer in time": "o servidor não respondeu a tempo",
   "cannot reach the server": "não é possível contactar o servidor",
+  "the server's certificate is not trusted — %1": "o certificado do servidor não é de confiança — %1",
   "this server address is not valid": "este endereço de servidor não é válido",
   "network error — %1": "erro de rede — %1",
   "the server sent an unreadable answer": "o servidor enviou uma resposta ilegível",
@@ -293,6 +297,7 @@ _TR = {
   "cannot use this file — %1": "не удаётся использовать этот файл — %1",
   "the server did not answer in time": "сервер не ответил вовремя",
   "cannot reach the server": "сервер недоступен",
+  "the server's certificate is not trusted — %1": "сертификат сервера не считается доверенным — %1",
   "this server address is not valid": "неверный адрес сервера",
   "network error — %1": "ошибка сети — %1",
   "the server sent an unreadable answer": "сервер прислал нечитаемый ответ",
@@ -308,6 +313,13 @@ def _lang():
         if v:
             return v[:2].lower()
     try:                    # Windows, and macOS opened from the Finder: no LANG at all
+        if sys.platform == "darwin":
+            # The Mac's language (System Settings › General › Language & Region, first of the
+            # list), not its region: name() follows the region, a French Mac in Switzerland set
+            # to English would otherwise be spoken to in French.
+            ui = QtCore.QLocale.system().uiLanguages()
+            if ui and ui[0]:
+                return ui[0][:2].lower()
         return QtCore.QLocale.system().name()[:2].lower()
     except Exception:
         return "en"
@@ -321,6 +333,13 @@ def _(key, *args):
     for i, a in enumerate(args):
         s = s.replace("%" + str(i + 1), str(a))
     return s
+
+
+def _keys(text):
+    """A shortcut as the Mac shows it: Qt reads Ctrl as the Command key there, ⌘ is its name."""
+    if sys.platform == "darwin":
+        return text.replace("Ctrl+", "⌘").replace("Strg+", "⌘")
+    return text
 
 
 class Task:
@@ -841,6 +860,22 @@ def credentials_dialog(parent, export, cfg):
 # UI
 # ------------------------------------------------------------------------------------------
 
+def _ssl_reason(e):
+    """The reason OpenSSL (or the system, through truststore) gives, without the wrapping of
+    requests and urllib3: "self-signed certificate", "unable to get local issuer certificate"…"""
+    r = e
+    for _i in range(6):       # requests' SSLError › urllib3's MaxRetryError › SSLError › the cause
+        inner = getattr(r, "reason", None)
+        if not isinstance(inner, BaseException) and r.args and isinstance(r.args[0], BaseException):
+            inner = r.args[0]
+        if not isinstance(inner, BaseException):
+            break
+        r = inner
+    text = getattr(r, "verify_message", None) or str(r)
+    m = re.search(r"certificate verify failed: ([^(]+)", text)
+    return (m.group(1) if m else text).strip().rstrip(".")
+
+
 def _error_text(e):
     """One line for the status bar, in the interface language: our own errors are already
     translated; a library's English message is kept only after a translated lead."""
@@ -851,6 +886,8 @@ def _error_text(e):
     if isinstance(e, (requests.exceptions.MissingSchema, requests.exceptions.InvalidSchema,
                       requests.exceptions.InvalidURL)):
         return _("this server address is not valid")
+    if isinstance(e, requests.exceptions.SSLError):      # a ConnectionError too: asked first
+        return _("the server's certificate is not trusted — %1", _ssl_reason(e))
     if isinstance(e, requests.exceptions.ConnectionError):
         return _("cannot reach the server")
     if isinstance(e, requests.exceptions.RequestException):
@@ -1163,7 +1200,7 @@ class Main(QtWidgets.QMainWindow):
         bottom.addWidget(self.status, 1)
         self.gear = QtWidgets.QLabel("⚙")
         self.gear.setObjectName("dim")
-        self.gear.setToolTip(_("server settings (Ctrl+,)"))
+        self.gear.setToolTip(_keys(_("server settings (Ctrl+,)")))
         self.gear.setCursor(QtCore.Qt.PointingHandCursor)
         self.gear.mousePressEvent = lambda e: self.setup()
         bottom.addWidget(self.gear, 0)
@@ -1310,7 +1347,7 @@ class Main(QtWidgets.QMainWindow):
             self.status.setText(_("credentials imported")); self.connect_client(); return
         if result != QtWidgets.QDialog.Accepted:
             if not self.cfg.get("url"):
-                self.status.setText(_("not connected — Ctrl+, to set up"))
+                self.status.setText(_keys(_("not connected — Ctrl+, to set up")))
             return
         self.cfg.update(dlg.values())
         save_config(self.cfg)
@@ -1576,7 +1613,20 @@ def load_bundled_fonts():
     return n
 
 
+def _system_certificates():
+    """HTTPS checked against the system's certificates (the macOS Keychain, the Windows store) and
+    not only against the list bundled with requests: a server with a company or home CA trusted by
+    the system is then trusted here too, as by Debian's requests. Without truststore (a .deb on an
+    older system), requests keeps its own list; nothing else changes. Must run before any Session."""
+    try:
+        import truststore
+        truststore.inject_into_ssl()
+    except Exception:
+        pass
+
+
 def main():
+    _system_certificates()
     credentials_cli(sys.argv)
     # Sizes in the layout are pixels and text sizes are points: without this, a scaled screen
     # (125 %, 150 %, 200 %) grows the text and not the boxes around it.

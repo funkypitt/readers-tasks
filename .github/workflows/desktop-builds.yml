@@ -4,8 +4,9 @@
 # Actions tab (the binaries are then kept as artifacts for a few days). The .deb and the PKGBUILD
 # stay where they are: this workflow only adds the two desktops that cannot build themselves here.
 #
-# Neither binary is signed: Windows shows a SmartScreen warning, macOS says the app "cannot be
-# opened" until it is opened once with a right click. The README says so to the reader.
+# Neither binary is signed: Windows shows a SmartScreen warning; macOS refuses the first opening,
+# then offers System Settings › Privacy & Security › Open Anyway (macOS 15 and later; a right click
+# › Open on 14). The README says so to the reader.
 
 name: Windows and macOS builds
 
@@ -45,11 +46,11 @@ jobs:
         shell: bash
         run: echo "VERSION=$(sed -n 's/^VERSION = "\(.*\)"/\1/p' readers_tasks.py)" >> "$GITHUB_ENV"
 
-      - name: Install PyQt5, requests and PyInstaller
+      - name: Install PyQt5, requests, truststore and PyInstaller
         shell: bash
         run: |
           python -m pip install --upgrade pip
-          pip install "PyQt5==5.15.11" requests pyinstaller
+          pip install "PyQt5==5.15.11" requests truststore pyinstaller
 
       # ---------------------------------------------------------------- Windows: one .exe
       - name: Build the .exe
@@ -61,6 +62,7 @@ jobs:
             --icon packaging/readers-tasks.ico \
             --add-data "packaging/readers-tasks.png;." \
             --add-data "packaging/fonts;fonts" \
+            --hidden-import truststore \
             readers_tasks.py
           mkdir -p out
           mv "dist/Readers Tasks.exe" "out/readers-tasks_${VERSION}_windows_x64.exe"
@@ -85,7 +87,10 @@ jobs:
             --osx-bundle-identifier ch.gallaz.readerstasks \
             --add-data "packaging/readers-tasks.png:." \
             --add-data "packaging/fonts:fonts" \
+            --hidden-import truststore \
             readers_tasks.py
+          # The version and the oldest macOS the bundle starts on, before the signature seals it.
+          python packaging/macos-info.py "dist/Readers Tasks.app" "$VERSION"
           # Ad hoc signature: on Apple Silicon an unsigned binary does not start at all.
           codesign --force --deep --sign - "dist/Readers Tasks.app"
           codesign --verify --deep --strict "dist/Readers Tasks.app"
